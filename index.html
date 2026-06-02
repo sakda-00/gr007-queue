@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบบัตรคิวรับ-ส่งสินค้า</title>
+    <title>ระบบจองบัตรคิวรับ-ส่งสินค้าออนไลน์ (Google Sheets)</title>
     <style>
         :root {
             --primary-color: #d32f2f;
@@ -67,22 +67,24 @@
 </head>
 <body>
 
+    <!-- แถบแจ้งเตือนสิทธิ์การรับข้อมูล -->
     <div id="notification-banner" class="notification-banner">
         📢 เพื่อไม่ให้พลาดคิวของคุณ โปรดเปิดเปิดสิทธิ์การแจ้งเตือนบนมือถือ/บราวเซอร์
         <button class="btn-notify-req" onclick="requestNotificationPermission()">เปิดการแจ้งเตือน</button>
     </div>
 
     <header>
-        <h1>ระบบบัตรคิวส่งสินค้า GR.ST007</h1>
-        <p>Makro Nakhon Ratchasima1</p>
+        <h1>ระบบจองบัตรคิวออนไลน์ (Google Sheets)</h1>
+        <p>ข้อมูลลงทะเบียนทั้งหมดจะถูกจัดเก็บลงบนฐานข้อมูล Google Sheets ส่วนกลางแบบ Real-time</p>
     </header>
 
     <div id="toast"></div>
 
     <div class="container">
+        <!-- ฝั่งผู้รับบริการ (Client) -->
         <div class="left-column" style="display: flex; flex-direction: column; gap: 2rem;">
             <div class="card">
-                <h2>...สถานะคิวปัจจุบัน...</h2>
+                <h2>สถานะคิวปัจจุบัน</h2>
                 <div class="current-queue-box">
                     <p>คิวที่กำลังเรียกขณะนี้</p>
                     <div class="current-queue-number" id="now-serving">--</div>
@@ -108,22 +110,23 @@
             <div class="card">
                 <h2>ลงทะเบียนจองคิว</h2>
                 <form id="queue-form" novalidate>
-                    <div class="form-group"><label>ชื่อ-นามสกุล <span style="color:red;">*</span></label><input type="text" id="fullname" placeholder="อัครเดช ชอบส่ง"><div class="error-msg" id="name-error">❌ จำเป็นต้องกรอกชื่อ</div></div>
-                    <div class="form-group"><label>เบอร์โทรศัพท์ <span style="color:red;">*</span></label><input type="text" id="phone" placeholder="0934567369"><div class="error-msg" id="phone-error">❌ จำเป็นต้องกรอกเบอร์โทร</div></div>
-                    <div class="form-group"><label>บริษัท <span style="color:red;">*</span></label><input type="text" id="company" placeholder="บริษัท อภิมหารศาล จำกัด"><div class="error-msg" id="company-error">❌ จำเป็นต้องกรอกบริษัท</div></div>
-                    <div class="form-group"><label>สินค้า <span style="color:red;">*</span></label><input type="text" id="product" placeholder="นม/น้ำ/หมู/ยา"><div class="error-msg" id="product-error">❌ จำเป็นต้องกรอกสินค้า</div></div>
+                    <div class="form-group"><label>ชื่อ-นามสกุล <span style="color:red;">*</span></label><input type="text" id="fullname" placeholder="นาย ก"><div class="error-msg" id="name-error">❌ จำเป็นต้องกรอกชื่อ</div></div>
+                    <div class="form-group"><label>เบอร์โทรศัพท์ <span style="color:red;">*</span></label><input type="text" id="phone" placeholder="0123456789"><div class="error-msg" id="phone-error">❌ จำเป็นต้องกรอกเบอร์โทร</div></div>
+                    <div class="form-group"><label>บริษัท <span style="color:red;">*</span></label><input type="text" id="company" placeholder="บริษัท จำกัด"><div class="error-msg" id="company-error">❌ จำเป็นต้องกรอกบริษัท</div></div>
+                    <div class="form-group"><label>สินค้า <span style="color:red;">*</span></label><input type="text" id="product" placeholder="นม/น้ำหวาน"><div class="error-msg" id="product-error">❌ จำเป็นต้องกรอกสินค้า</div></div>
                     <div class="form-group">
                         <label>รถ <span style="color:red;">*</span></label>
                         <select id="car-type"><option value="">-- เลือกประเภทรถ --</option><option value="4 ล้อ">4 ล้อ</option><option value="6 ล้อ">6 ล้อ</option><option value="10 ล้อ">10 ล้อ</option><option value="18 ล้อ">18 ล้อ</option></select>
                         <div class="error-msg" id="cartype-error">❌ จำเป็นต้องเลือกประเภทรถ</div>
                     </div>
-                    <div class="form-group"><label>ทะเบียน <span style="color:red;">*</span></label><input type="text" id="license-id" placeholder="มค0007/70-0007"><div class="error-msg" id="license-error">❌ จำเป็นต้องกรอกทะเบียน</div></div>
-                    <div class="form-group"><label>จำนวนสินค้า <span style="color:red;">*</span></label><input type="text" id="quantity" placeholder="ชิ้น/พาเลท/กก."><div class="error-msg" id="quantity-error">❌ จำเป็นต้องกรอกจำนวน</div></div>
+                    <div class="form-group"><label>ทะเบียน <span style="color:red;">*</span></label><input type="text" id="license-id" placeholder="มค1234"><div class="error-msg" id="license-error">❌ จำเป็นต้องกรอกทะเบียน</div></div>
+                    <div class="form-group"><label>จำนวนสินค้า <span style="color:red;">*</span></label><input type="text" id="quantity" placeholder="10 พาเลท"><div class="error-msg" id="quantity-error">❌ จำเป็นต้องกรอกจำนวน</div></div>
                     <button type="submit" class="btn" id="submit-btn">กดเพื่อรับบัตรคิว</button>
                 </form>
             </div>
         </div>
 
+        <!-- ฝั่งแอดมิน (Admin) -->
         <div class="right-column">
             <div class="card">
                 <h2>พื้นที่ผู้ดูแลระบบ (Admin)</h2>
@@ -158,7 +161,9 @@
 
     <script>
         const ADMIN_PASSWORD = "grkorat007";
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyUItR9adFo4ycXjT0jfPFJuTnNTGnr4ak7BDvhwJfdXST0w1emvpute66lMPj0cVBL/exec"; 
+        
+        // 🔗 อัปเดตลิงก์ใหม่ตัวล่าสุดให้เรียบร้อยแล้วครับ
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkUrftweGTcpMuTK8yfL--jWCK-itG4gYhNFY594DRssB4sG4QW0IlRiOJFU6kgyFF/exec"; 
 
         let myQueueId = sessionStorage.getItem('myQueueId') || null;
         let localQueuesCache = [];
@@ -175,7 +180,6 @@
         // ====== 📱 ระบบแจ้งเตือนผ่านบราวเซอร์ (Web Notification API) ======
         function checkNotificationPermission() {
             if (!("Notification" in window)) return;
-            
             if (Notification.permission === "default") {
                 document.getElementById('notification-banner').style.display = 'block';
             }
@@ -187,7 +191,6 @@
                 if (permission === "granted") {
                     showToast("✅ เปิดระบบแจ้งเตือนสำเร็จ!");
                     document.getElementById('notification-banner').style.display = 'none';
-                    // ทดสอบส่งแจ้งเตือน
                     new Notification("ระบบคิวสินค้า", { body: "เปิดระบบรับการแจ้งเตือนบนอุปกรณ์นี้เรียบร้อยแล้ว", icon: "https://cdn-icons-png.flaticon.com/512/550/550137.png" });
                 } else {
                     showToast("❌ คุณปฏิเสธการเข้าถึงการแจ้งเตือน");
@@ -200,7 +203,7 @@
                 new Notification(title, {
                     body: bodyText,
                     icon: "https://cdn-icons-png.flaticon.com/512/550/550137.png",
-                    requireInteraction: true // บังคับให้ค้างอยู่บนหน้าจอจนกว่าผู้ใช้จะกดปิด
+                    requireInteraction: true 
                 });
             }
         }
@@ -330,7 +333,7 @@
             } else { showToast("⚠️ กรุณากรอกข้อมูลให้ครบถ้วน!"); }
         });
 
-        // --- ฟังก์ชันดึงข้อมูลคิว (GET) และกระตุ้น Notification บนจอมือถือ ---
+        // --- ฟังก์ชันดึงข้อมูลคิว (GET) ---
         function fetchDataFromSheets() {
             if (!GOOGLE_SCRIPT_URL) return;
 
@@ -340,7 +343,7 @@
                 document.getElementById('now-serving').textContent = data.currentServing;
                 localQueuesCache = data.queues;
                 
-                // 1. แจ้งเตือนแอดมินเมื่อมีคนขับรถกดลงทะเบียนคิวใหม่เข้ามา
+                // 1. แจ้งเตือนแอดมินเมื่อมีคิวใหม่
                 if (sessionStorage.getItem('isAdmin') === 'true') {
                     const currentWaitingCount = data.queues.filter(q => q.status === 'waiting').length;
                     if (currentWaitingCount > previousTotalQueuesCount) {
@@ -351,7 +354,7 @@
                     previousTotalQueuesCount = currentWaitingCount;
                 }
 
-                // 2. แจ้งเตือนคนขับรถเมื่อโดนเรียกคิว (ทำงานแม้พับหน้าจอบราวเซอร์อยู่)
+                // 2. แจ้งเตือนคนขับเมื่อโดนเรียกคิว
                 if (myQueueId) {
                     let myQueue = data.queues.find(q => q.id === myQueueId);
                     if (myQueue) {
@@ -360,9 +363,8 @@
                             setTimeout(() => { speakQueue(myQueue.queue_number); }, 900);
                             showToast(`🚨 ถึงคิวรับบริการของคุณแล้ว! (${myQueue.queue_number})`);
                             
-                            // 📱 ยิง Notification เด้งขึ้นหน้าจอมือถือคนขับ
                             sendSystemPushNotification(
-                                ` ถึงคิวของคุณแล้ว! 🎉`, 
+                                `ถึงคิวของคุณแล้ว! 🎉`, 
                                 `หมายเลข ${myQueue.queue_number} กรุณานำรถเข้าช่องรับบริการทันทีค่ะ`
                             );
                         }
@@ -525,9 +527,7 @@
             document.getElementById('admin-dashboard').style.display = 'block';
         }
 
-        // ตรวจสอบและเริ่มต้นขอสิทธิ์แจ้งเตือนตอนเข้าเว็บ
         checkNotificationPermission();
-
         setInterval(fetchDataFromSheets, 8000);
         fetchDataFromSheets();
     </script>
