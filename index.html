@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบบัตรคิวส่งสินค้า</title>
+    <title>ระบบจองบัตรคิวรับ-ส่งสินค้าออนไลน์ (Google Sheets)</title>
     <style>
         :root {
             --primary-color: #d32f2f;
@@ -59,13 +59,22 @@
         .btn-sm { padding: 0.3rem 0.5rem; font-size: 0.8rem; border: none; border-radius: 3px; cursor: pointer; color: white; font-weight: bold; }
         .btn-loading { background-color: #cccccc; color: #666666; cursor: not-allowed; }
         .queue-details { font-size: 0.85rem; color: #444; margin-top: 0.25rem; line-height: 1.5; }
+        
+        /* สไตล์ปุ่มขอสิทธิ์ */
+        .notification-banner { background-color: #e2e3e5; color: #383d41; padding: 10px; text-align: center; font-size: 0.9rem; display: none; }
+        .btn-notify-req { background-color: #007bff; color: white; border: none; padding: 3px 10px; border-radius: 3px; cursor: pointer; font-weight: bold; margin-left: 10px; }
     </style>
 </head>
 <body>
 
+    <div id="notification-banner" class="notification-banner">
+        📢 เพื่อไม่ให้พลาดคิวของคุณ โปรดเปิดเปิดสิทธิ์การแจ้งเตือนบนมือถือ/บราวเซอร์
+        <button class="btn-notify-req" onclick="requestNotificationPermission()">เปิดการแจ้งเตือน</button>
+    </div>
+
     <header>
-        <h1>ระบบบัตรคิวส่งสินค้า GR.ST007</h1>
-        <p>Makro Nakhon Ratchasima 1</p>
+        <h1>ระบบจองบัตรคิวออนไลน์ (Google Sheets)</h1>
+        <p>ข้อมูลลงทะเบียนทั้งหมดจะถูกจัดเก็บลงบนฐานข้อมูล Google Sheets ส่วนกลางแบบ Real-time</p>
     </header>
 
     <div id="toast"></div>
@@ -73,7 +82,7 @@
     <div class="container">
         <div class="left-column" style="display: flex; flex-direction: column; gap: 2rem;">
             <div class="card">
-                <h2>สถานะคิวปัจจุบัน</h2>
+                <h2>...สถานะคิวปัจจุบัน...</h2>
                 <div class="current-queue-box">
                     <p>คิวที่กำลังเรียกขณะนี้</p>
                     <div class="current-queue-number" id="now-serving">--</div>
@@ -149,8 +158,7 @@
 
     <script>
         const ADMIN_PASSWORD = "grkorat007";
-        // 🌟 อัปเดตลิงก์สคริปต์ใหม่เรียบร้อยแล้วครับ
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsObXS_U-ZTBt-d4bIvAmCOMisXfcIaBHyd4jHSY_tGhw0nMWe-2m5WPsajt78ReNO/exec"; 
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyUItR9adFo4ycXjT0jfPFJuTnNTGnr4ak7BDvhwJfdXST0w1emvpute66lMPj0cVBL/exec"; 
 
         let myQueueId = sessionStorage.getItem('myQueueId') || null;
         let localQueuesCache = [];
@@ -162,6 +170,39 @@
             toast.textContent = message;
             toast.style.display = 'block';
             setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        // ====== 📱 ระบบแจ้งเตือนผ่านบราวเซอร์ (Web Notification API) ======
+        function checkNotificationPermission() {
+            if (!("Notification" in window)) return;
+            
+            if (Notification.permission === "default") {
+                document.getElementById('notification-banner').style.display = 'block';
+            }
+        }
+
+        function requestNotificationPermission() {
+            if (!("Notification" in window)) return;
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    showToast("✅ เปิดระบบแจ้งเตือนสำเร็จ!");
+                    document.getElementById('notification-banner').style.display = 'none';
+                    // ทดสอบส่งแจ้งเตือน
+                    new Notification("ระบบคิวสินค้า", { body: "เปิดระบบรับการแจ้งเตือนบนอุปกรณ์นี้เรียบร้อยแล้ว", icon: "https://cdn-icons-png.flaticon.com/512/550/550137.png" });
+                } else {
+                    showToast("❌ คุณปฏิเสธการเข้าถึงการแจ้งเตือน");
+                }
+            });
+        }
+
+        function sendSystemPushNotification(title, bodyText) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(title, {
+                    body: bodyText,
+                    icon: "https://cdn-icons-png.flaticon.com/512/550/550137.png",
+                    requireInteraction: true // บังคับให้ค้างอยู่บนหน้าจอจนกว่าผู้ใช้จะกดปิด
+                });
+            }
         }
 
         // ====== 🔔 ระบบจัดการเอฟเฟกต์เสียง ======
@@ -264,27 +305,20 @@
 
                 fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
+                    mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'register', ...formData })
+                    body: JSON.stringify(formData)
                 })
-                .then(res => res.json())
-                .then(resData => {
+                .then(() => {
                     playSuccessBeep();
                     showToast("✨ ลงทะเบียนสำเร็จเรียบร้อย!");
                     fields.forEach(field => document.getElementById(field.inputId).value = "");
-                    
-                    if(resData && resData.id) {
-                        myQueueId = resData.id;
-                        sessionStorage.setItem('myQueueId', resData.id);
-                    } else {
-                        myQueueId = "latest";
-                        sessionStorage.setItem('myQueueId', "latest");
-                    }
-
                     setTimeout(() => {
                         btn.disabled = false;
                         btn.className = "btn";
                         btn.textContent = "กดเพื่อรับบัตรคิว";
+                        myQueueId = "latest"; 
+                        sessionStorage.setItem('myQueueId', "latest");
                         fetchDataFromSheets();
                     }, 1500);
                 })
@@ -296,43 +330,11 @@
             } else { showToast("⚠️ กรุณากรอกข้อมูลให้ครบถ้วน!"); }
         });
 
-        // --- ฟังก์ชันดึงข้อมูลคิว (GET) ---
+        // --- ฟังก์ชันดึงข้อมูลคิว (GET) และกระตุ้น Notification บนจอมือถือ ---
         function fetchDataFromSheets() {
             if (!GOOGLE_SCRIPT_URL) return;
 
             fetch(GOOGLE_SCRIPT_URL)
             .then(res => res.json())
             .then(data => {
-                document.getElementById('now-serving').textContent = data.currentServing || "--";
-                localQueuesCache = data.queues || [];
-                
-                const currentWaitingCount = localQueuesCache.filter(q => q.status === 'waiting').length;
-                document.getElementById('total-waiting').textContent = currentWaitingCount;
-
-                if (sessionStorage.getItem('isAdmin') === 'true') {
-                    if (currentWaitingCount > previousTotalQueuesCount) {
-                        playAdminNotificationSound();
-                        showToast("📢 แจ้งเตือน: มีการลงทะเบียนจองคิวรถคันใหม่เข้ามา!");
-                    }
-                    previousTotalQueuesCount = currentWaitingCount;
-                }
-
-                if (myQueueId) {
-                    let myQueue = localQueuesCache.find(q => q.id === myQueueId);
-                    if (myQueueId === "latest" && localQueuesCache.length > 0) {
-                        myQueue = localQueuesCache[localQueuesCache.length - 1];
-                    }
-
-                    if (myQueue) {
-                        document.getElementById('my-ticket-card').style.display = 'block';
-                        document.getElementById('my-queue-number').textContent = myQueue.queue_number;
-                        document.getElementById('ticket-holder-name').textContent = `ผู้จอง: ${myQueue.fullname} (${myQueue.company})`;
-                        
-                        const statusBadge = document.getElementById('ticket-status');
-                        if (myQueue.status === 'serving') {
-                            statusBadge.textContent = "กำลังรับบริการ";
-                            statusBadge.className = "ticket-status-badge status-serving";
-                            if (previousMyStatus !== 'serving') {
-                                playUserSirenSound();
-                                setTimeout(() => { speakQueue(myQueue.queue_number); }, 900);
-                                showToast(`🚨 ถึงคิวรับบริการของคุณแล้ว! (${myQueue
+                document.getElementById('now-serving').textContent = data.current
