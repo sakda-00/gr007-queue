@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบจองบัตรคิวรับ-ส่งสินค้าออนไลน์ (GR KORAT)</title>
+    <title>ระบบบัตรคิวส่งสินค้า GR KORAT1</title>
     <style>
         :root {
             --primary-color: #d32f2f;
@@ -148,8 +148,8 @@
 <body>
 
     <header>
-        <h1>ระบบจัดการและจองคิวรถขนส่งสินค้าอัจฉริยะ</h1>
-        <p>GR KORAT - มั่นคง ปลอดภัย ตรงเวลา</p>
+        <h1>ระบบคิวรถขนส่งสินค้า GR.ST007</h1>
+        <p>Makro Nakhon Ratchasima 1</p>
     </header>
 
     <div id="toast">แจ้งเตือน</div>
@@ -157,7 +157,7 @@
     <div class="container">
         <div>
             <div class="now-serving-box">
-                <h2>📢 คิวที่กำลังเรียกบริการขณะนี้</h2>
+                <h2>📦คิวรถที่กำลังลงสินค้าขณะนี้📦</h2>
                 <h1 id="current-serving-number">--</h1>
                 <p>กรุณาเตรียมพร้อมและเลื่อนรถเข้าจุดรับ-ส่งสินค้า</p>
             </div>
@@ -171,7 +171,7 @@
 
                 <div class="ticket-card" id="my-active-ticket" style="display: none;">
                     <div class="ticket-header" id="ticket-header-bg">
-                        <h3 id="ticket-header-title">🎫 บัตรคิวออนไลน์ของคุณ</h3>
+                        <h3 id="ticket-header-title">🎫บัตรคิวของคุณ🎫</h3>
                         <p>GR KORAT TRANSPORT</p>
                     </div>
                     <div class="ticket-body">
@@ -202,7 +202,7 @@
         </div>
 
         <div class="card">
-            <h2>📝 ลงทะเบียนจองคิวรถ</h2>
+            <h2>📝 ลงทะเบียนรับคิวรถ</h2>
             <form id="queue-form" style="margin-top: 1rem;">
                 <div class="form-group">
                     <label>ชื่อ-นามสกุล คนขับรถ *</label>
@@ -228,7 +228,7 @@
                     <label>ประเภทรถ *</label>
                     <select id="car_type" required>
                         <option value="">-- เลือกประเภทรถ --</option>
-                        <option value="4 ล้อ">4 ล้อใหญ่</option>
+                        <option value="4 ล้อ">4 ล้อ</option>
                         <option value="6 ล้อ">6 ล้อ</option>
                         <option value="10 ล้อ">10 ล้อ</option>
                         <option value="เทรลเลอร์">เทรลเลอร์ / พ่วง</option>
@@ -238,7 +238,7 @@
                     <label>ทะเบียนรถ *</label>
                     <input type="text" id="license_id" required placeholder="เช่น 80-1234 นครราชสีมา">
                 </div>
-                <button type="submit" id="submit-btn">🏢 ยืนยันการจองคิว</button>
+                <button type="submit" id="submit-btn">ยืนยันการรับคิว</button>
             </form>
         </div>
     </div>
