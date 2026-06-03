@@ -15,105 +15,162 @@
             --success-color: #388e3c;
             --warning-color: #f57c00;
             --dark-color: #343a40;
+            --info-color: #0288d1;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; }
-        header { background-color: var(--primary-color); color: var(--secondary-color); padding: 1.5rem 1rem; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body { background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; padding-bottom: 2rem; }
+        
+        header { 
+            background-color: var(--primary-color); 
+            color: var(--secondary-color); 
+            padding: 1.5rem 1rem; 
+            text-align: center; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        }
+        header h1 { font-size: 1.5rem; margin-bottom: 0.2rem; }
+        header p { font-size: 0.9rem; opacity: 0.9; }
         
         #toast {
-            visibility: hidden; min-width: 250px; background-color: #333; color: #fff;
-            text-align: center; border-radius: 4px; padding: 16px; position: fixed;
-            z-index: 9999; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 17px;
+            visibility: hidden; min-width: 280px; max-width: 90%; background-color: #333; color: #fff;
+            text-align: center; border-radius: 8px; padding: 16px; position: fixed;
+            z-index: 9999; left: 50%; bottom: 20px; transform: translateX(-50%); font-size: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        #toast.show { visibility: visible; -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
-        @-webkit-keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
-        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
-        @-webkit-keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
-        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 20px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 20px; opacity: 1;} to {bottom: 0; opacity: 0;} }
 
-        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; display: grid; grid-template-columns: 1fr; gap: 2rem; }
-        @media (min-width: 768px) { .container { grid-template-columns: 1fr 2fr; } }
+        .container { 
+            display: grid; 
+            grid-template-columns: 1fr; 
+            gap: 1.2rem; 
+            max-width: 1200px; 
+            margin: 1rem auto; 
+            padding: 0 0.8rem; 
+        }
 
-        .card { background: var(--secondary-color); padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
-        .card h2 { margin-bottom: 1rem; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 0.5rem; }
+        .card { 
+            background: var(--secondary-color); 
+            padding: 1.2rem; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
+            border: 1px solid var(--border-color); 
+        }
+        .card h2 { margin-bottom: 1.2rem; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 0.5rem; font-size: 1.3rem; }
 
-        .form-group { margin-bottom: 1.2rem; }
-        .form-group label { display: block; margin-bottom: 0.4rem; font-weight: bold; }
-        .form-group input, .form-group select { width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary-color); }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.4rem; font-weight: bold; font-size: 0.95rem; }
+        .form-group input, .form-group select { 
+            width: 100%; 
+            padding: 0.75rem; 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            -webkit-appearance: none;
+        }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(211,47,47,0.1); }
 
-        button { width: 100%; padding: 0.75rem; background-color: var(--primary-color); color: var(--secondary-color); border: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button { 
+            width: 100%; 
+            padding: 0.85rem; 
+            background-color: var(--primary-color); 
+            color: var(--secondary-color); 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 1.05rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: background 0.2s; 
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
         button:hover { background-color: var(--primary-dark); }
 
-        .now-serving-box { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); color: white; text-align: center; padding: 2rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(211,47,47,0.3); }
-        .now-serving-box h1 { font-size: 4rem; margin: 0.5rem 0; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .now-serving-box { 
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); 
+            color: white; 
+            text-align: center; 
+            padding: 1.5rem 1rem; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(211,47,47,0.2); 
+            margin-bottom: 1.2rem;
+        }
+        .now-serving-box h2 { font-size: 1.1rem; opacity: 0.95; font-weight: normal; }
+        .now-serving-box h1 { font-size: 3.5rem; margin: 0.2rem 0; letter-spacing: 1px; text-shadow: 2px 2px 4px rgba(0,0,0,0.15); }
+        .now-serving-box p { font-size: 0.85rem; opacity: 0.9; }
 
-        .table-responsive { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 1rem; text-align: left; }
-        th, td { padding: 0.75rem; border-bottom: 1px solid var(--border-color); }
-        th { background-color: var(--dark-color); color: var(--secondary-color); }
-        tr:hover { background-color: #f1f1f1; }
+        @media (min-width: 768px) {
+            header { padding: 2rem 1rem; }
+            header h1 { font-size: 2.2rem; }
+            header p { font-size: 1.1rem; }
+            .container { grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem auto; padding: 0 1.5rem; }
+            .card { padding: 1.8rem; }
+            .card h2 { font-size: 1.5rem; }
+            .now-serving-box { padding: 2.2rem 1.5rem; margin-bottom: 2rem; }
+            .now-serving-box h2 { font-size: 1.3rem; }
+            .now-serving-box h1 { font-size: 4.5rem; }
+            .now-serving-box p { font-size: 0.95rem; }
+        }
 
-        .badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; font-weight: bold; display: inline-block; }
+        .table-responsive { 
+            width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border-color); border-radius: 8px; margin-top: 1rem;
+        }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; white-space: nowrap; }
+        th, td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); }
+        th { background-color: var(--dark-color); color: var(--secondary-color); font-weight: 600; }
+        tr:hover { background-color: #f8f9fa; }
+
+        .badge { padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.8rem; font-weight: bold; display: inline-block; }
         .badge-waiting { background-color: var(--warning-color); color: white; }
         .badge-serving { background-color: var(--success-color); color: white; }
+        .badge-done { background-color: #757575; color: white; }
 
-        .admin-section { grid-column: 1 / -1; margin-top: 2rem; border-top: 3px dashed var(--border-color); padding-top: 2rem; }
-        .admin-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .btn-admin { padding: 0.4rem 0.8rem; font-size: 0.9rem; width: auto; }
+        .admin-section { grid-column: 1 / -1; margin-top: 1.5rem; border-top: 2px dashed var(--border-color); padding-top: 1.5rem; }
+        .admin-actions { display: flex; gap: 0.4rem; }
+        .btn-admin { padding: 0.5rem 0.8rem; font-size: 0.85rem; width: auto; border-radius: 6px; font-weight: bold; }
         .btn-call { background-color: var(--success-color); }
         .btn-call:hover { background-color: #2e7d32; }
+        .btn-done { background-color: var(--info-color); }
+        .btn-done:hover { background-color: #01579b; }
         .btn-move { background-color: var(--warning-color); }
         .btn-move:hover { background-color: #e65100; }
-        .btn-cancel { background-color: var(--dark-color); }
-        .btn-cancel:hover { background-color: #23272b; }
-        .btn-clear { background-color: #c62828; margin-bottom: 1rem; }
+        .btn-cancel { background-color: #c62828; }
+        .btn-cancel:hover { background-color: #b71c1c; }
+        .btn-clear { background-color: #c62828; margin-bottom: 1rem; width: auto; }
 
-        .tabs { display: flex; margin-bottom: 1rem; border-bottom: 2px solid var(--border-color); }
-        .tab-btn { background: none; color: var(--text-color); border: none; padding: 0.75rem 1.5rem; width: auto; font-size: 1.1rem; border-radius: 0; cursor: pointer; }
-        .tab-btn.active { color: var(--primary-color); border-bottom: 3px solid var(--primary-color); font-weight: bold; }
-
-        /* --- ระบบหน้าต่างป๊อปอัปบัตรคิว (Queue Ticket Modal) --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center;
-            align-items: center; z-index: 10000; visibility: hidden; opacity: 0;
-            transition: all 0.3s ease;
-        }
-        .modal-overlay.open { visibility: visible; opacity: 1; }
+        .ticket-container { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; }
+        .empty-ticket-msg { text-align: center; color: #777; padding: 1.5rem; font-size: 0.95rem; background: #fff; border: 1px dashed #ccc; border-radius: 12px; width: 100%; }
+        .ticket-card { background: #fff; width: 100%; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); overflow: hidden; border: 1px solid var(--border-color); position: relative; }
+        .ticket-header { background: var(--primary-color); color: #fff; text-align: center; padding: 1.2rem 1rem; }
+        .ticket-header h3 { margin: 0; letter-spacing: 1px; font-size: 1.3rem; }
+        .ticket-header p { font-size: 0.8rem; opacity: 0.85; margin-top: 0.1rem; }
         
-        .ticket-card {
-            background: #fff; width: 350px; border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3); overflow: hidden;
-            position: relative; animation: popUp 0.4s ease;
-        }
-        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-        .ticket-header { background: var(--primary-color); color: #fff; text-align: center; padding: 1rem; }
-        .ticket-header h3 { margin: 0; letter-spacing: 1px; }
+        .ticket-body { padding: 1.2rem; text-align: center; }
+        .ticket-queue-num { font-size: 4.5rem; font-weight: 900; color: var(--primary-color); margin: 0.1rem 0; line-height: 1; letter-spacing: 1px; }
         
-        .ticket-body { padding: 1.5rem; text-align: center; position: relative; }
-        .ticket-queue-num { font-size: 4.5rem; font-weight: 900; color: var(--primary-color); margin: 0.5rem 0; line-height: 1; }
+        .ticket-remaining-box { background-color: #fff3cd; color: #856404; padding: 0.8rem; border-radius: 8px; font-weight: bold; font-size: 1.05rem; margin: 1rem 0; border: 1px solid #ffeeba; display: flex; justify-content: center; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+        .ticket-remaining-box span.num { font-size: 1.6rem; color: var(--primary-color); font-weight: 900; line-height: 1; }
+
+        .ticket-divider { border-top: 2px dashed #ccc; margin: 1.2rem 0; position: relative; }
+        .ticket-divider::before, .ticket-divider::after { content: ''; position: absolute; top: -11px; width: 20px; height: 20px; background: var(--bg-color); border-radius: 50%; border: 1px solid var(--border-color); }
+        .ticket-divider::before { left: -22px; }
+        .ticket-divider::after { right: -22px; }
+
+        .ticket-details { text-align: left; font-size: 0.95rem; color: #444; background: #f9f9f9; padding: 0.9rem; border-radius: 8px; border: 1px dashed #ddd; }
+        .ticket-details div { margin-bottom: 0.5rem; display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding-bottom: 0.3rem; }
+        .ticket-details div:last-child { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
+        .ticket-details span { font-weight: bold; color: #111; text-align: right; margin-left: 0.5rem; }
+
+        .ticket-footer { padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; background: #f1f3f5; border-top: 1px solid var(--border-color); }
+        @media (min-width: 480px) { .ticket-footer { flex-direction: row; } }
         
-        /* เส้นประรอยฉีกตั๋ว */
-        .ticket-divider {
-            border-top: 2px dashed #bbb; margin: 1rem 0; position: relative;
-        }
-        .ticket-divider::before, .ticket-divider::after {
-            content: ''; position: absolute; top: -10px; width: 20px; height: 20px;
-            background: rgba(0, 0, 0, 0.6); border-radius: 50%;
-        }
-        .ticket-divider::before { left: -26px; }
-        .ticket-divider::after { right: -26px; }
-
-        .ticket-details { text-align: left; font-size: 0.95rem; color: #444; background: #f9f9f9; padding: 0.8rem; border-radius: 6px; }
-        .ticket-details div { margin-bottom: 0.4rem; display: flex; justify-content: space-between; }
-        .ticket-details span { font-weight: bold; color: #111; }
-
-        .ticket-footer { padding: 1rem; display: flex; gap: 0.5rem; background: #eee; }
-        .btn-ticket-close { background: var(--dark-color); }
         .btn-ticket-print { background: var(--success-color); }
+        .btn-ticket-print:hover { background-color: #2e7d32; }
+        .btn-ticket-cancel { background: #6c757d; }
+        .btn-ticket-cancel:hover { background-color: #5a6268; }
     </style>
 </head>
 <body>
@@ -125,34 +182,8 @@
 
     <div id="toast">แจ้งเตือน</div>
 
-    <div class="modal-overlay" id="ticket-modal">
-        <div class="ticket-card">
-            <div class="ticket-header">
-                <h3>บัตรคิวอิเล็กทรอนิกส์</h3>
-                <p style="font-size: 0.8rem; opacity: 0.9;">GR KORAT TRANSPORT</p>
-            </div>
-            <div class="ticket-body">
-                <p style="color: #666; font-weight: bold; font-size: 0.9rem;">หมายเลขคิวของคุณคือ</p>
-                <div class="ticket-queue-num" id="modal-queue-num">Q000</div>
-                <p style="color: var(--warning-color); font-weight: bold; font-size: 0.85rem;">⚠️ โปรดบันทึกหน้าจอนี้ไว้แสดงต่อเจ้าหน้าที่</p>
-                
-                <div class="ticket-divider"></div>
-                
-                <div class="ticket-details">
-                    <div>ผู้ลงทะเบียน: <span id="modal-name">-</span></div>
-                    <div>ทะเบียนรถ: <span id="modal-license">-</span></div>
-                    <div>บริษัท/สังกัด: <span id="modal-company">-</span></div>
-                    <div>เวลาจองคิว: <span id="modal-time" style="font-size:0.8rem;">-</span></div>
-                </div>
-            </div>
-            <div class="ticket-footer">
-                <button class="btn-ticket-print" onclick="window.print()">🖨️ พิมพ์บัตรคิว</button>
-                <button class="btn-ticket-close" onclick="closeTicketModal()">❌ ปิดหน้าต่าง</button>
-            </div>
-        </div>
-    </div>
-
     <div class="container">
+        <!-- ฝั่งซ้าย: บอร์ดเรียกคิว & ตั๋วคิวผู้ใช้ -->
         <div>
             <div class="now-serving-box">
                 <h2>📢 คิวที่กำลังเรียกบริการขณะนี้</h2>
@@ -160,88 +191,105 @@
                 <p>กรุณาเตรียมพร้อมและเลื่อนรถเข้าจุดรับ-ส่งสินค้า</p>
             </div>
 
-            <div class="card">
-                <h2>📝 ลงทะเบียนจองคิวรถ</h2>
-                <form id="queue-form">
-                    <div class="form-group">
-                        <label>ชื่อ-นามสกุล คนขับรถ *</label>
-                        <input type="text" id="fullname" required placeholder="เช่น นายสมชาย ใจดี">
+            <div class="ticket-container" id="ticket-display-area">
+                <div class="empty-ticket-msg" id="empty-ticket-msg">
+                    <p style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎫</p>
+                    <p style="font-weight: bold; color: #555;">คุณยังไม่มีการจองคิวในเซสชันนี้</p>
+                    <p style="font-size: 0.85rem; margin-top: 0.3rem; color: #888;">เมื่อกรอกข้อมูลและลงทะเบียนที่ฟอร์มฝั่งขวา บัตรคิวออนไลน์พร้อมลำดับคิวคงเหลือจะแสดงขึ้นตรงนี้ทันที</p>
+                </div>
+
+                <div class="ticket-card" id="my-active-ticket" style="display: none;">
+                    <div class="ticket-header" id="ticket-header-bg">
+                        <h3 id="ticket-header-title">🎫 บัตรคิวออนไลน์ของคุณ</h3>
+                        <p>GR KORAT TRANSPORT</p>
                     </div>
-                    <div class="form-group">
-                        <label>เบอร์โทรศัพท์ *</label>
-                        <input type="tel" id="phone" required placeholder="เช่น 0812345678">
+                    <div class="ticket-body">
+                        <p style="color: #666; font-weight: bold; font-size: 0.9rem;">หมายเลขคิวของคุณ</p>
+                        <div class="ticket-queue-num" id="modal-queue-num">Q000</div>
+                        
+                        <div class="ticket-remaining-box" id="modal-remaining-container">
+                            ⏳ เหลืออีก <span class="num" id="modal-remaining-count">--</span> คิวจะถึงลำดับของคุณ
+                        </div>
+
+                        <p style="color: #999; font-size: 0.75rem;">🔄 ระบบอัปเดตสถานะอัตโนมัติทุก 10 วินาที</p>
+                        
+                        <div class="ticket-divider"></div>
+                        
+                        <div class="ticket-details">
+                            <div>คนขับรถ: <span id="modal-name">-</span></div>
+                            <div>ทะเบียนรถ: <span id="modal-license">-</span></div>
+                            <div>บริษัท/สังกัด: <span id="modal-company">-</span></div>
+                            <div>เวลารับคิว: <span id="modal-time">-</span></div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>บริษัท/สังกัด *</label>
-                        <input type="text" id="company" required placeholder="เช่น บจก. ขนส่งรุ่งเรือง">
+                    <div class="ticket-footer" id="ticket-footer-area">
+                        <button class="btn-ticket-print" id="btn-print-ctrl" onclick="window.print()">🖨️ พิมพ์/เซฟบัตรคิว</button>
+                        <button class="btn-ticket-cancel" id="btn-cancel-ctrl" onclick="abandonMyTicket()">❌ ออกจากคิวนี้</button>
                     </div>
-                    <div class="form-group">
-                        <label>ประเภทสินค้า *</label>
-                        <input type="text" id="product" required placeholder="เช่น นมกล่อง, ข้าวสาร">
-                    </div>
-                    <div class="form-group">
-                        <label>จำนวนสินค้า *</label>
-                        <input type="text" id="quantity" required placeholder="เช่น 10 พาเลท, 5 ตัน">
-                    </div>
-                    <div class="form-group">
-                        <label>ประเภทรถ *</label>
-                        <select id="car_type" required>
-                            <option value="">-- เลือกประเภทรถ --</option>
-                            <option value="4 ล้อ">4 ล้อใหญ่</option>
-                            <option value="6 ล้อ">6 ล้อ</option>
-                            <option value="10 ล้อ">10 ล้อ</option>
-                            <option value="เทรลเลอร์">เทรลเลอร์ / พ่วง</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>ทะเบียนรถ *</label>
-                        <input type="text" id="license_id" required placeholder="เช่น 80-1234 นครราชสีมา">
-                    </div>
-                    <button type="submit" id="submit-btn">🏢 ยืนยันการจองคิว</button>
-                </form>
+                </div>
             </div>
         </div>
 
+        <!-- ฝั่งขวา: ฟอร์มลงทะเบียน -->
         <div class="card">
-            <div class="tabs">
-                <button class="tab-btn active">📋 คิวทั้งหมดในระบบ</button>
-            </div>
-            
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>คิว</th>
-                            <th>คนขับ / บริษัท</th>
-                            <th>ทะเบียน / รถ</th>
-                            <th>สินค้า / จำนวน</th>
-                            <th>สถานะคิว</th>
-                        </tr>
-                    </thead>
-                    <tbody id="queue-tbody">
-                        <tr><td colspan="5" style="text-align:center;">🔄 กำลังโหลดข้อมูลจากระบบ...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+            <h2>📝 ลงทะเบียนจองคิวรถ</h2>
+            <form id="queue-form" style="margin-top: 1rem;">
+                <div class="form-group">
+                    <label>ชื่อ-นามสกุล คนขับรถ *</label>
+                    <input type="text" id="fullname" required placeholder="เช่น นายสมชาย ใจดี">
+                </div>
+                <div class="form-group">
+                    <label>เบอร์โทรศัพท์ *</label>
+                    <input type="tel" id="phone" required placeholder="เช่น 0812345678">
+                </div>
+                <div class="form-group">
+                    <label>บริษัท/สังกัด *</label>
+                    <input type="text" id="company" required placeholder="เช่น บจก. ขนส่งรุ่งเรือง">
+                </div>
+                <div class="form-group">
+                    <label>ประเภทสินค้า *</label>
+                    <input type="text" id="product" required placeholder="เช่น นมกล่อง, ข้าวสาร">
+                </div>
+                <div class="form-group">
+                    <label>จำนวนสินค้า *</label>
+                    <input type="text" id="quantity" required placeholder="เช่น 10 พาเลท, 5 ตัน">
+                </div>
+                <div class="form-group">
+                    <label>ประเภทรถ *</label>
+                    <select id="car_type" required>
+                        <option value="">-- เลือกประเภทรถ --</option>
+                        <option value="4 ล้อ">4 ล้อใหญ่</option>
+                        <option value="6 ล้อ">6 ล้อ</option>
+                        <option value="10 ล้อ">10 ล้อ</option>
+                        <option value="เทรลเลอร์">เทรลเลอร์ / พ่วง</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>ทะเบียนรถ *</label>
+                    <input type="text" id="license_id" required placeholder="เช่น 80-1234 นครราชสีมา">
+                </div>
+                <button type="submit" id="submit-btn">🏢 ยืนยันการจองคิว</button>
+            </form>
         </div>
 
+        <!-- โซนผู้ดูแลระบบ (Admin) -->
         <div class="admin-section card">
-            <h2>🔒 พื้นที่ควบคุมสำหรับผู้ดูแลระบบ (Admin Control Panel)</h2>
+            <h2>🔒 พื้นที่ควบคุมสำหรับผู้ดูแลระบบ (Admin Control)</h2>
             
             <div id="admin-auth-panel">
-                <div class="form-group" style="max-width: 400px; display: flex; gap: 0.5rem; margin-top: 1rem;">
+                <div class="form-group" style="max-width: 420px; display: flex; gap: 0.5rem; margin-top: 1rem;">
                     <input type="password" id="admin-pass" placeholder="กรอกรหัสผ่านผู้ดูแลระบบ">
-                    <button class="btn-admin" onclick="loginAdmin()" style="width: auto; white-space: nowrap;">🔓 เข้าสู่ระบบ</button>
+                    <button class="btn-admin" onclick="loginAdmin()" style="width: auto; white-space: nowrap; padding: 0 1.2rem;">🔓 เข้าสู่ระบบ</button>
                 </div>
             </div>
 
             <div id="admin-dashboard" style="display: none; margin-top: 1rem;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <p style="color: var(--success-color); font-weight: bold; margin-bottom: 1rem;">ยินดีต้อนรับแอดมิน GR KORAT!</p>
-                    <button class="btn-admin btn-cancel" onclick="logoutAdmin()" style="width:auto; padding: 4px 10px; margin-bottom:1rem;">🔒 ออกจากระบบ</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 0.5rem;">
+                    <p style="color: var(--success-color); font-weight: bold; font-size: 0.95rem;">ยินดีต้อนรับแอดมิน GR KORAT!</p>
+                    <button class="btn-admin btn-cancel" onclick="logoutAdmin()" style="width:auto; padding: 5px 12px; margin-bottom: 0.5rem;">🔒 ออกจากระบบ</button>
                 </div>
                 
-                <button class="btn-clear" onclick="clearAllQueues()" style="width:auto; padding:8px 15px;">⚠️ ล้างข้อมูลคิวทั้งหมดในระบบ</button>
+                <button class="btn-clear" onclick="clearAllQueues()">⚠️ ล้างข้อมูลคิวทั้งหมดในระบบ</button>
 
                 <div class="table-responsive">
                     <table>
@@ -256,7 +304,7 @@
                             </tr>
                         </thead>
                         <tbody id="admin-queue-tbody">
-                            <tr><td colspan="6" style="text-align:center;">🔒 กรุณาเข้าสู่ระบบเพื่อจัดการข้อมูล</td></tr>
+                            <tr><td colspan="6" style="text-align:center;">🔒 กำลังเรียกข้อมูลตารางแอดมิน...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -269,6 +317,7 @@
         const ADMIN_PASSWORD = "grkorat007"; 
 
         let cachedQueues = [];
+        let hasAlertedDone = false; // ตัวแปรล็อกไม่ให้แจ้งเตือนเสียง Done ซ้ำๆ
 
         function showToast(message) {
             const x = document.getElementById("toast");
@@ -296,17 +345,122 @@
             }
         }
 
-        function showTicketModal(data) {
-            document.getElementById('modal-queue-num').innerText = data.queue_number;
-            document.getElementById('modal-name').innerText = data.fullname;
-            document.getElementById('modal-license').innerText = data.license_id;
-            document.getElementById('modal-company').innerText = data.company;
-            document.getElementById('modal-time').innerText = data.timestamp;
-            document.getElementById('ticket-modal').classList.add('open');
+        function triggerDoneAlert(queueNumber) {
+            showToast(`✅ คิว ${queueNumber} สิ้นสุดการให้บริการแล้ว ขอบคุณค่ะ`);
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification("✅ สิ้นสุดการให้บริการ", { body: `คิวหมายเลข ${queueNumber} ทำรายการเสร็จสิ้นเรียบร้อยแล้ว ขอบคุณค่ะ` });
+            }
+            if ('speechSynthesis' in window && !hasAlertedDone) {
+                window.speechSynthesis.cancel();
+                const msg = new SpeechSynthesisUtterance(`คิวหมายเลข ${queueNumber.split('').join(' ')} ทำรายการเสร็จสิ้นเรียบร้อยแล้วค่ะ ขอบคุณค่ะ`);
+                msg.lang = 'th-TH'; msg.rate = 0.9;
+                window.speechSynthesis.speak(msg);
+                hasAlertedDone = true; 
+            }
         }
 
-        function closeTicketModal() {
-            document.getElementById('ticket-modal').classList.remove('open');
+        function updateTicketPanel(queues) {
+            const myQueueNumber = sessionStorage.getItem('myQueueNumber');
+            const emptyMsg = document.getElementById('empty-ticket-msg');
+            const ticketCard = document.getElementById('my-active-ticket');
+
+            if (!myQueueNumber) {
+                emptyMsg.style.display = 'block';
+                ticketCard.style.display = 'none';
+                return;
+            }
+
+            const myQueueIndex = queues.findIndex(q => (q.queue_number || q["คิว"]) === myQueueNumber);
+            
+            if (myQueueIndex !== -1) {
+                const myData = queues[myQueueIndex];
+                const stat = myData.status || myData["สถานะคิว"];
+
+                // กรณีแอดมินกดยกเลิกไปดื้อๆ ให้เคลียร์หน้าจอ
+                if (stat === 'cancel') {
+                    sessionStorage.removeItem('myQueueNumber');
+                    emptyMsg.style.display = 'block';
+                    ticketCard.style.display = 'none';
+                    return;
+                }
+
+                emptyMsg.style.display = 'none';
+                ticketCard.style.display = 'block';
+
+                document.getElementById('modal-queue-num').innerText = myQueueNumber;
+                document.getElementById('modal-name').innerText = myData.fullname || myData["ชื่อ-นามสกุล"];
+                document.getElementById('modal-license').innerText = myData.license_id || myData["ทะเบียน"];
+                document.getElementById('modal-company').innerText = myData.company || myData["บริษัท"];
+                document.getElementById('modal-time').innerText = myData.timestamp || myData["เวลาบันทึก"] || "-";
+
+                const remainingContainer = document.getElementById('modal-remaining-container');
+                const headerBg = document.getElementById('ticket-header-bg');
+                const headerTitle = document.getElementById('ticket-header-title');
+                const footerArea = document.getElementById('ticket-footer-area');
+
+                // --- เช็คสถานะคิวเพื่อแสดงผลให้ตรงกับผู้ใช้งาน ---
+                if (stat === 'done') {
+                    // แจ้งเตือนลูกค้าว่าทำรายการจบแล้ว
+                    triggerDoneAlert(myQueueNumber);
+
+                    headerBg.style.background = '#455a64'; // เปลี่ยนหัวตั๋วเป็นสีเทาเข้ม
+                    headerTitle.innerText = "✅ เช็คเอาท์เสร็จสิ้น";
+                    
+                    remainingContainer.style.backgroundColor = '#d1ecf1';
+                    remainingContainer.style.color = '#0c5460';
+                    remainingContainer.style.borderColor = '#bee5eb';
+                    remainingContainer.innerHTML = "🏁 <strong>สิ้นสุดการให้บริการเรียบร้อยแล้ว</strong><br>ขอบคุณที่ใช้บริการค่ะ เดินทางปลอดภัย";
+                    
+                    // เปลี่ยนปุ่มด้านล่างให้เป็นปุ่มรับทราบเพื่อเคลียร์หน้าจอจองใหม่
+                    footerArea.innerHTML = `<button style="background:#455a64;" onclick="abandonMyTicket()">👍 รับทราบ (ปิดหน้าจอนี้)</button>`;
+
+                } else if (stat === 'serving') {
+                    headerBg.style.background = 'var(--success-color)';
+                    headerTitle.innerText = "📢 กำลังรับบริการ";
+                    
+                    remainingContainer.style.backgroundColor = '#d4edda';
+                    remainingContainer.style.color = '#155724';
+                    remainingContainer.style.borderColor = '#c3e6cb';
+                    remainingContainer.innerHTML = "🎉 ถึงคิวบริการของคุณแล้ว! โปรดเคลื่อนรถเข้าจุดบริการ";
+                    
+                    footerArea.innerHTML = `
+                        <button class="btn-ticket-print" onclick="window.print()">🖨️ พิมพ์/เซฟบัตรคิว</button>
+                        <button class="btn-ticket-cancel" onclick="abandonMyTicket()">❌ ออกจากคิวนี้</button>
+                    `;
+                } else {
+                    // สถานะ waiting รอคิวปกติ
+                    headerBg.style.background = 'var(--primary-color)';
+                    headerTitle.innerText = "🎫 บัตรคิวออนไลน์ของคุณ";
+                    hasAlertedDone = false; // รีเซ็ตตัวแจ้งเตือน
+
+                    let remainingCount = 0;
+                    for (let i = 0; i < myQueueIndex; i++) {
+                        const currentStatus = queues[i].status || queues[i]["สถานะคิว"];
+                        if (currentStatus === 'waiting') {
+                            remainingCount++;
+                        }
+                    }
+                    remainingContainer.style.backgroundColor = '#fff3cd';
+                    remainingContainer.style.color = '#856404';
+                    remainingContainer.style.borderColor = '#ffeeba';
+                    remainingContainer.innerHTML = `⏳ เหลืออีก <span class="num">${remainingCount}</span> คิวจะถึงลำดับของคุณ`;
+                    
+                    footerArea.innerHTML = `
+                        <button class="btn-ticket-print" onclick="window.print()">🖨️ พิมพ์/เซฟบัตรคิว</button>
+                        <button class="btn-ticket-cancel" onclick="abandonMyTicket()">❌ ออกจากคิวนี้</button>
+                    `;
+                }
+            } else {
+                sessionStorage.removeItem('myQueueNumber');
+                emptyMsg.style.display = 'block';
+                ticketCard.style.display = 'none';
+            }
+        }
+
+        function abandonMyTicket() {
+            sessionStorage.removeItem('myQueueNumber');
+            hasAlertedDone = false;
+            fetchDataFromSheets();
         }
 
         function fetchDataFromSheets() {
@@ -321,7 +475,8 @@
                     }
 
                     cachedQueues = data.queues;
-                    renderPublicTable(cachedQueues);
+                    updateTicketPanel(cachedQueues);
+
                     if(sessionStorage.getItem('isAdmin') === 'true') { renderAdminTable(cachedQueues); }
                 })
                 .catch(err => console.error("Error fetching:", err));
@@ -351,7 +506,9 @@
             .then(res => {
                 if(res.status === "success") {
                     document.getElementById('queue-form').reset();
-                    showTicketModal(res); // เรียกแสดงหน้าต่างตั๋วคิวทันที
+                    sessionStorage.setItem('myQueueNumber', res.queue_number);
+                    hasAlertedDone = false;
+                    showToast("🎉 จองคิวสำเร็จ! บัตรคิวแสดงที่ฝั่งซ้ายใต้บอร์ดเรียกคิวแล้ว");
                     fetchDataFromSheets();
                 } else { alert("เกิดข้อผิดพลาด: " + res.error); }
             })
@@ -363,14 +520,19 @@
         });
 
         function controlQueue(id, action) {
-            if(!confirm(`คุณแน่ใจหรือไม่ที่จะทำการ [${action}] กับคิวนี้?`)) return;
+            let label = action === 'call' ? 'เรียกคิว' : action === 'done' ? 'เสร็จสิ้นคิว' : action === 'move-end' ? 'ย้ายท้าย' : 'ยกเลิกคิว';
+            if(!confirm(`คุณแน่ใจหรือไม่ที่จะทำการ [${label}] กับคิวนี้?`)) return;
+            
             fetch(GOOGLE_SCRIPT_URL, {
                 method: "POST",
                 body: JSON.stringify({ id: id, action: action })
             })
             .then(res => res.json())
             .then(res => {
-                if(res.status === "success") { showToast("💾 อัปเดตข้อมูลสำเร็จ"); fetchDataFromSheets(); }
+                if(res.status === "success") { 
+                    showToast(`💾 อัปเดตสถานะเป็น [${action}] สำเร็จ`); 
+                    fetchDataFromSheets(); 
+                }
             });
         }
 
@@ -381,47 +543,19 @@
             .then(res => { if(res.status === "success") { showToast("🗑️ ล้างฐานข้อมูลเรียบร้อย"); fetchDataFromSheets(); } });
         }
 
-        function renderPublicTable(queues) {
-            const tbody = document.getElementById('queue-tbody');
-            tbody.innerHTML = '';
-            if(queues.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">📭 ยังไม่มีการจองคิวเข้ามาในระบบในขณะนี้</td></tr>`;
-                return;
-            }
-            queues.forEach(q => {
-                const tr = document.createElement('tr');
-                const qNum = q.queue_number || q["คิว"];
-                const fName = q.fullname || q["ชื่อ-นามสกุล"];
-                const comp = q.company || q["บริษัท"];
-                const lic = q.license_id || q["ทะเบียน"];
-                const cType = q.car_type || q["ประเภทรถ"];
-                const prod = q.product || q["สินค้า"];
-                const qty = q.quantity || q["จำนวนสินค้า"];
-                const stat = q.status || q["สถานะคิว"];
-
-                const statusBadge = stat === 'serving' 
-                    ? `<span class="badge badge-serving">🟢 กำลังบริการ</span>` 
-                    : `<span class="badge badge-waiting">⏳ รอเรียกคิว</span>`;
-
-                tr.innerHTML = `
-                    <td style="font-weight:bold; font-size:1.2rem; color:var(--primary-color);">${qNum}</td>
-                    <td><strong>${fName}</strong><br><small style="color:#666">${comp}</small></td>
-                    <td>${lic}<br><small style="color:#666">${cType}</small></td>
-                    <td>${prod}<br><small style="color:#666">จำนวน: ${qty}</small></td>
-                    <td>${statusBadge}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
         function renderAdminTable(queues) {
             const adminTbody = document.getElementById('admin-queue-tbody');
             adminTbody.innerHTML = '';
-            if(queues.length === 0) {
-                adminTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">ไม่มีข้อมูลคิวให้จัดการ</td></tr>`;
+            
+            // แอดมินจะมองเห็นคิวที่กำลังรอ (waiting) และคิวที่กำลังเรียก (serving) เป็นหลัก คิวที่เสร็จสิ้น (done) แล้วจะถูกซ่อนออกจากตารางเพื่อความสะอาด
+            const activeQueues = queues.filter(q => (q.status || q["สถานะคิว"]) !== 'done' && (q.status || q["สถานะคิว"]) !== 'cancel');
+
+            if(activeQueues.length === 0) {
+                adminTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">ไม่มีข้อมูลคิวที่กำลังดำเนินงานในระบบขณะนี้</td></tr>`;
                 return;
             }
-            queues.forEach(q => {
+            
+            activeQueues.forEach(q => {
                 const tr = document.createElement('tr');
                 const qId = q.id || q["ID"];
                 const qNum = q.queue_number || q["คิว"];
@@ -432,17 +566,21 @@
                 const lic = q.license_id || q["ทะเบียน"];
                 const stat = q.status || q["สถานะคิว"];
 
+                let badgeClass = 'badge-waiting';
+                if(stat === 'serving') badgeClass = 'badge-serving';
+
                 tr.innerHTML = `
-                    <td style="font-weight:bold;">${qNum}</td>
-                    <td><strong>${fName}</strong><br>${comp}</td>
-                    <td><a href="tel:${ph}" style="color:var(--primary-color); font-weight:bold;">📞 ${ph}</a></td>
-                    <td>${cType} (${lic})</td>
-                    <td><span class="badge ${stat==='serving'?'badge-serving':'badge-waiting'}">${stat}</span></td>
+                    <td style="font-weight:bold; font-size: 1.1rem;">${qNum}</td>
+                    <td><strong>${fName}</strong><br><span style="color:#666; font-size:0.85rem;">${comp}</span></td>
+                    <td><a href="tel:${ph}" style="color:var(--primary-color); font-weight:bold; text-decoration:none;">📞 ${ph}</a></td>
+                    <td>${cType}<br><span style="color:#555; font-size:0.85rem;">(${lic})</span></td>
+                    <td><span class="badge ${badgeClass}">${stat}</span></td>
                     <td>
                         <div class="admin-actions">
                             <button class="btn-admin btn-call" onclick="controlQueue('${qId}', 'call')">เรียกคิว</button>
+                            <button class="btn-admin btn-done" onclick="controlQueue('${qId}', 'done')">เสร็จ</button>
                             <button class="btn-admin btn-move" onclick="controlQueue('${qId}', 'move-end')">ย้ายท้าย</button>
-                            <button class="btn-admin btn-cancel" style="background-color:#c62828;" onclick="controlQueue('${qId}', 'cancel')">ยกเลิก</button>
+                            <button class="btn-admin btn-cancel" onclick="controlQueue('${qId}', 'cancel')">ยกเลิก</button>
                         </div>
                     </td>
                 `;
@@ -473,8 +611,9 @@
         }
 
         checkNotificationPermission();
-        setInterval(fetchDataFromSheets, 8000);
-        fetchDataFromSheets();
+        
+        setInterval(fetchDataFromSheets, 10000);
+        fetchDataFromSheets(); 
     </script>
 </body>
 </html>
