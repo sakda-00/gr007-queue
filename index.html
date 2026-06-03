@@ -261,22 +261,30 @@
                 btn.className = "btn btn-loading";
                 btn.textContent = "กำลังส่งข้อมูลลงคิวระบบ...";
 
+                // 🌟 แก้ไข: นำ mode: 'no-cors' ออกเพื่อให้ดึงข้อมูลหลังจากบันทึกได้ถูกต้อง
                 fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify({ action: 'register', ...formData })
                 })
-                .then(() => {
+                .then(res => res.json())
+                .then(resData => {
                     playSuccessBeep();
                     showToast("✨ ลงทะเบียนสำเร็จเรียบร้อย!");
                     fields.forEach(field => document.getElementById(field.inputId).value = "");
+                    
+                    if(resData && resData.id) {
+                        myQueueId = resData.id;
+                        sessionStorage.setItem('myQueueId', resData.id);
+                    } else {
+                        myQueueId = "latest";
+                        sessionStorage.setItem('myQueueId', "latest");
+                    }
+
                     setTimeout(() => {
                         btn.disabled = false;
                         btn.className = "btn";
                         btn.textContent = "กดเพื่อรับบัตรคิว";
-                        myQueueId = "latest"; 
-                        sessionStorage.setItem('myQueueId', "latest");
                         fetchDataFromSheets();
                     }, 1500);
                 })
@@ -295,11 +303,13 @@
             fetch(GOOGLE_SCRIPT_URL)
             .then(res => res.json())
             .then(data => {
-                document.getElementById('now-serving').textContent = data.currentServing;
-                localQueuesCache = data.queues;
+                document.getElementById('now-serving').textContent = data.currentServing || "--";
+                localQueuesCache = data.queues || [];
                 
+                const currentWaitingCount = localQueuesCache.filter(q => q.status === 'waiting').length;
+                document.getElementById('total-waiting').textContent = currentWaitingCount;
+
                 if (sessionStorage.getItem('isAdmin') === 'true') {
-                    const currentWaitingCount = data.queues.filter(q => q.status === 'waiting').length;
                     if (currentWaitingCount > previousTotalQueuesCount) {
                         playAdminNotificationSound();
                         showToast("📢 แจ้งเตือน: มีการลงทะเบียนจองคิวรถคันใหม่เข้ามา!");
@@ -308,35 +318,21 @@
                 }
 
                 if (myQueueId) {
-                    let myQueue = data.queues.find(q => q.id === myQueueId);
-                    if (myQueue) {
-                        if (myQueue.status === 'serving' && previousMyStatus !== 'serving') {
-                            playUserSirenSound();
-                            setTimeout(() => { speakQueue(myQueue.queue_number); }, 900);
-                            showToast(`🚨 ถึงคิวรับบริการของคุณแล้ว! (${myQueue.queue_number})`);
-                        }
-                        previousMyStatus = myQueue.status;
+                    let myQueue = localQueuesCache.find(q => q.id === myQueueId);
+                    if (myQueueId === "latest" && localQueuesCache.length > 0) {
+                        myQueue = localQueuesCache[localQueuesCache.length - 1];
                     }
-                }
-                renderDOM(data.queues, data.currentServing);
-            })
-            .catch(err => console.error("Error fetching rows:", err));
-        }
 
-        // --- ฟังก์ชันส่งคำสั่งควบคุมเดี่ยว ---
-        function controlQueue(id, action) {
-            let confirmationText = "";
-            if (action === 'call') confirmationText = "ต้องการเรียกคิวนี้ขึ้นรับบริการใช่หรือไม่?";
-            if (action === 'move-end') confirmationText = "ต้องการย้ายคิวนี้ไปต่อท้ายแถวสุดใช่หรือไม่?";
-            if (action === 'cancel') confirmationText = "❗ ต้องการลบคิวนี้ออกจากฐานข้อมูลใช่หรือไม่?";
-
-            if (confirm(confirmationText)) {
-                showToast("⏳ กำลังดำเนินการ...");
-                if (action === 'move-end' || action === 'cancel') {
-                    previousTotalQueuesCount = Math.max(0, previousTotalQueuesCount - 1);
-                }
-
-                fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'a
+                    if (myQueue) {
+                        document.getElementById('my-ticket-card').style.display = 'block';
+                        document.getElementById('my-queue-number').textContent = myQueue.queue_number;
+                        document.getElementById('ticket-holder-name').textContent = `ผู้จอง: ${myQueue.fullname} (${myQueue.company})`;
+                        
+                        const statusBadge = document.getElementById('ticket-status');
+                        if (myQueue.status === 'serving') {
+                            statusBadge.textContent = "กำลังรับบริการ";
+                            statusBadge.className = "ticket-status-badge status-serving";
+                            if (previousMyStatus !== 'serving') {
+                                playUserSirenSound();
+                                setTimeout(() => { speakQueue(myQueue.queue_number); }, 900);
+                                showToast(`🚨
