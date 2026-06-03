@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบบัตรส่งสินค้าออนไลน์ GR007-KORAT1</title>
+    <title>ระบบจองบัตรคิวรับ-ส่งสินค้าออนไลน์ (Google Sheets)</title>
     <style>
         :root {
             --primary-color: #d32f2f;
@@ -73,6 +73,47 @@
         .tabs { display: flex; margin-bottom: 1rem; border-bottom: 2px solid var(--border-color); }
         .tab-btn { background: none; color: var(--text-color); border: none; padding: 0.75rem 1.5rem; width: auto; font-size: 1.1rem; border-radius: 0; cursor: pointer; }
         .tab-btn.active { color: var(--primary-color); border-bottom: 3px solid var(--primary-color); font-weight: bold; }
+
+        /* --- ระบบหน้าต่างป๊อปอัปบัตรคิว (Queue Ticket Modal) --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center;
+            align-items: center; z-index: 10000; visibility: hidden; opacity: 0;
+            transition: all 0.3s ease;
+        }
+        .modal-overlay.open { visibility: visible; opacity: 1; }
+        
+        .ticket-card {
+            background: #fff; width: 350px; border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); overflow: hidden;
+            position: relative; animation: popUp 0.4s ease;
+        }
+        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .ticket-header { background: var(--primary-color); color: #fff; text-align: center; padding: 1rem; }
+        .ticket-header h3 { margin: 0; letter-spacing: 1px; }
+        
+        .ticket-body { padding: 1.5rem; text-align: center; position: relative; }
+        .ticket-queue-num { font-size: 4.5rem; font-weight: 900; color: var(--primary-color); margin: 0.5rem 0; line-height: 1; }
+        
+        /* เส้นประรอยฉีกตั๋ว */
+        .ticket-divider {
+            border-top: 2px dashed #bbb; margin: 1rem 0; position: relative;
+        }
+        .ticket-divider::before, .ticket-divider::after {
+            content: ''; position: absolute; top: -10px; width: 20px; height: 20px;
+            background: rgba(0, 0, 0, 0.6); border-radius: 50%;
+        }
+        .ticket-divider::before { left: -26px; }
+        .ticket-divider::after { right: -26px; }
+
+        .ticket-details { text-align: left; font-size: 0.95rem; color: #444; background: #f9f9f9; padding: 0.8rem; border-radius: 6px; }
+        .ticket-details div { margin-bottom: 0.4rem; display: flex; justify-content: space-between; }
+        .ticket-details span { font-weight: bold; color: #111; }
+
+        .ticket-footer { padding: 1rem; display: flex; gap: 0.5rem; background: #eee; }
+        .btn-ticket-close { background: var(--dark-color); }
+        .btn-ticket-print { background: var(--success-color); }
     </style>
 </head>
 <body>
@@ -83,6 +124,33 @@
     </header>
 
     <div id="toast">แจ้งเตือน</div>
+
+    <div class="modal-overlay" id="ticket-modal">
+        <div class="ticket-card">
+            <div class="ticket-header">
+                <h3>บัตรคิวอิเล็กทรอนิกส์</h3>
+                <p style="font-size: 0.8rem; opacity: 0.9;">GR KORAT TRANSPORT</p>
+            </div>
+            <div class="ticket-body">
+                <p style="color: #666; font-weight: bold; font-size: 0.9rem;">หมายเลขคิวของคุณคือ</p>
+                <div class="ticket-queue-num" id="modal-queue-num">Q000</div>
+                <p style="color: var(--warning-color); font-weight: bold; font-size: 0.85rem;">⚠️ โปรดบันทึกหน้าจอนี้ไว้แสดงต่อเจ้าหน้าที่</p>
+                
+                <div class="ticket-divider"></div>
+                
+                <div class="ticket-details">
+                    <div>ผู้ลงทะเบียน: <span id="modal-name">-</span></div>
+                    <div>ทะเบียนรถ: <span id="modal-license">-</span></div>
+                    <div>บริษัท/สังกัด: <span id="modal-company">-</span></div>
+                    <div>เวลาจองคิว: <span id="modal-time" style="font-size:0.8rem;">-</span></div>
+                </div>
+            </div>
+            <div class="ticket-footer">
+                <button class="btn-ticket-print" onclick="window.print()">🖨️ พิมพ์บัตรคิว</button>
+                <button class="btn-ticket-close" onclick="closeTicketModal()">❌ ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
 
     <div class="container">
         <div>
@@ -136,7 +204,7 @@
 
         <div class="card">
             <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('all')">📋 คิวทั้งหมดในระบบ</button>
+                <button class="tab-btn active">📋 คิวทั้งหมดในระบบ</button>
             </div>
             
             <div class="table-responsive">
@@ -169,7 +237,7 @@
 
             <div id="admin-dashboard" style="display: none; margin-top: 1rem;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <p style="color: var(--success-color); font-weight: bold; margin-bottom: 1rem;">ยินดีต้อนรับแอดมิน GR KORAT! คุณสามารถจัดการคิวได้จากตารางด้านล่าง</p>
+                    <p style="color: var(--success-color); font-weight: bold; margin-bottom: 1rem;">ยินดีต้อนรับแอดมิน GR KORAT!</p>
                     <button class="btn-admin btn-cancel" onclick="logoutAdmin()" style="width:auto; padding: 4px 10px; margin-bottom:1rem;">🔒 ออกจากระบบ</button>
                 </div>
                 
@@ -197,9 +265,8 @@
     </div>
 
     <script>
-        // ใส่ลิงก์ Google Apps Script Web App URL ที่อัปเดตแล้ว
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwde4zTSON9YDQ4QIfVbWtt5bBAJpK5T-enRT4bC2wk7qTAOtSG6cIvzbbYfyKsSWkR/exec"; 
-        const ADMIN_PASSWORD = "grkorat007"; // รหัสผ่านเข้าหน้าแอดมินตามกำหนด
+        const ADMIN_PASSWORD = "grkorat007"; 
 
         let cachedQueues = [];
 
@@ -210,37 +277,38 @@
             setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
         }
 
-        // ขอสิทธิ์ระบบแจ้งเตือนของบราวเซอร์
         function checkNotificationPermission() {
-            if ("Notification" in window) {
-                if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-                    Notification.requestPermission();
-                }
+            if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
             }
         }
 
-        // ส่งเสียงและ Push Notification เตือนคิวสำคัญ
         function triggerQueueAlert(queueNumber) {
             showToast(`🔔 ถึงคิวของคุณแล้ว: หมายเลข ${queueNumber}`);
-            
             if ("Notification" in window && Notification.permission === "granted") {
-                new Notification("📢 ประกาศเรียกคิวใหม่!", {
-                    body: `คิวหมายเลข ${queueNumber} กรุณาเลื่อนรถเข้าจุดรับ-ส่งสินค้าค่ะ`,
-                    icon: 'https://cdn-icons-png.flaticon.com/512/3602/3602149.png'
-                });
+                new Notification("📢 ประกาศเรียกคิวใหม่!", { body: `คิวหมายเลข ${queueNumber} กรุณาเลื่อนรถเข้าจุดรับ-ส่งสินค้าค่ะ` });
             }
-
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
-                const msg = new SpeechSynthesisUtterance();
-                msg.text = `ขอเชิญคิวหมายเลข ${queueNumber.split('').join(' ')} ที่จุดรับส่งสินค้าค่ะ`;
-                msg.lang = 'th-TH';
-                msg.rate = 0.9;
+                const msg = new SpeechSynthesisUtterance(`ขอเชิญคิวหมายเลข ${queueNumber.split('').join(' ')} ที่จุดรับส่งสินค้าค่ะ`);
+                msg.lang = 'th-TH'; msg.rate = 0.9;
                 window.speechSynthesis.speak(msg);
             }
         }
 
-        // ดึงข้อมูล Real-time จาก Google Sheets
+        function showTicketModal(data) {
+            document.getElementById('modal-queue-num').innerText = data.queue_number;
+            document.getElementById('modal-name').innerText = data.fullname;
+            document.getElementById('modal-license').innerText = data.license_id;
+            document.getElementById('modal-company').innerText = data.company;
+            document.getElementById('modal-time').innerText = data.timestamp;
+            document.getElementById('ticket-modal').classList.add('open');
+        }
+
+        function closeTicketModal() {
+            document.getElementById('ticket-modal').classList.remove('open');
+        }
+
         function fetchDataFromSheets() {
             fetch(GOOGLE_SCRIPT_URL)
                 .then(res => res.json())
@@ -248,23 +316,17 @@
                     const oldServing = document.getElementById('current-serving-number').innerText;
                     document.getElementById('current-serving-number').innerText = data.currentServing;
                     
-                    // ถ้าระบบมีการเรียกคิวใหม่ และไม่ใช่ค่าเริ่มต้นว่างเปล่า ให้ส่งเสียงเตือนทันที
                     if(data.currentServing !== "--" && data.currentServing !== oldServing && oldServing !== "--") {
                         triggerQueueAlert(data.currentServing);
                     }
 
                     cachedQueues = data.queues;
                     renderPublicTable(cachedQueues);
-                    if(sessionStorage.getItem('isAdmin') === 'true') {
-                        renderAdminTable(cachedQueues);
-                    }
+                    if(sessionStorage.getItem('isAdmin') === 'true') { renderAdminTable(cachedQueues); }
                 })
-                .catch(err => {
-                    console.error("Error fetching:", err);
-                });
+                .catch(err => console.error("Error fetching:", err));
         }
 
-        // ส่งฟอร์มจองคิวเข้า Google Sheets
         document.getElementById('queue-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const submitBtn = document.getElementById('submit-btn');
@@ -288,12 +350,10 @@
             .then(res => res.json())
             .then(res => {
                 if(res.status === "success") {
-                    alert(`🎉 จองคิวสำเร็จ! หมายเลขคิวของคุณคือ: ${res.queue_number}`);
                     document.getElementById('queue-form').reset();
+                    showTicketModal(res); // เรียกแสดงหน้าต่างตั๋วคิวทันที
                     fetchDataFromSheets();
-                } else {
-                    alert("เกิดข้อผิดพลาด: " + res.error);
-                }
+                } else { alert("เกิดข้อผิดพลาด: " + res.error); }
             })
             .catch(err => alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้"))
             .finally(() => {
@@ -302,60 +362,52 @@
             });
         });
 
-        // ควบคุมคิวสำหรับแอดมิน (เรียกคิว, ย้ายท้าย, ยกเลิก)
         function controlQueue(id, action) {
             if(!confirm(`คุณแน่ใจหรือไม่ที่จะทำการ [${action}] กับคิวนี้?`)) return;
-
             fetch(GOOGLE_SCRIPT_URL, {
                 method: "POST",
                 body: JSON.stringify({ id: id, action: action })
             })
             .then(res => res.json())
             .then(res => {
-                if(res.status === "success") {
-                    showToast("💾 อัปเดตข้อมูลบน Google Sheets สำเร็จ");
-                    fetchDataFromSheets();
-                } else { showToast("❌ ข้อผิดพลาด: " + res.message); }
+                if(res.status === "success") { showToast("💾 อัปเดตข้อมูลสำเร็จ"); fetchDataFromSheets(); }
             });
         }
 
-        // ล้างคิวทั้งหมดในระบบ
         function clearAllQueues() {
-            if(!confirm("⚠️ คำเตือน! คุณกำลังจะลบข้อมูลคิวทั้งหมดในระบบออกจาก Google Sheets การกระทำนี้ไม่สามารถย้อนคืนได้ ยืนยันหรือไม่?")) return;
-            
-            fetch(GOOGLE_SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: 'clear-all' })
-            })
+            if(!confirm("⚠️ ยืนยันที่จะลบข้อมูลคิวทั้งหมดในระบบหรือไม่?")) return;
+            fetch(GOOGLE_SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: 'clear-all' }) })
             .then(res => res.json())
-            .then(res => {
-                if(res.status === "success") {
-                    showToast("🗑️ ล้างฐานข้อมูลคิวเรียบร้อยแล้ว");
-                    fetchDataFromSheets();
-                }
-            });
+            .then(res => { if(res.status === "success") { showToast("🗑️ ล้างฐานข้อมูลเรียบร้อย"); fetchDataFromSheets(); } });
         }
 
         function renderPublicTable(queues) {
             const tbody = document.getElementById('queue-tbody');
             tbody.innerHTML = '';
-            
             if(queues.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">📭 ยังไม่มีการจองคิวเข้ามาในระบบในขณะนี้</td></tr>`;
                 return;
             }
-
             queues.forEach(q => {
                 const tr = document.createElement('tr');
-                const statusBadge = q.status === 'serving' 
+                const qNum = q.queue_number || q["คิว"];
+                const fName = q.fullname || q["ชื่อ-นามสกุล"];
+                const comp = q.company || q["บริษัท"];
+                const lic = q.license_id || q["ทะเบียน"];
+                const cType = q.car_type || q["ประเภทรถ"];
+                const prod = q.product || q["สินค้า"];
+                const qty = q.quantity || q["จำนวนสินค้า"];
+                const stat = q.status || q["สถานะคิว"];
+
+                const statusBadge = stat === 'serving' 
                     ? `<span class="badge badge-serving">🟢 กำลังบริการ</span>` 
                     : `<span class="badge badge-waiting">⏳ รอเรียกคิว</span>`;
 
                 tr.innerHTML = `
-                    <td style="font-weight:bold; font-size:1.2rem; color:var(--primary-color);">${q.queue_number}</td>
-                    <td><strong>${q.fullname}</strong><br><small style="color:#666">${q.company}</small></td>
-                    <td>${q.license_id}<br><small style="color:#666">${q.car_type}</small></td>
-                    <td>${q.product}<br><small style="color:#666">จำนวน: ${q.quantity}</small></td>
+                    <td style="font-weight:bold; font-size:1.2rem; color:var(--primary-color);">${qNum}</td>
+                    <td><strong>${fName}</strong><br><small style="color:#666">${comp}</small></td>
+                    <td>${lic}<br><small style="color:#666">${cType}</small></td>
+                    <td>${prod}<br><small style="color:#666">จำนวน: ${qty}</small></td>
                     <td>${statusBadge}</td>
                 `;
                 tbody.appendChild(tr);
@@ -365,25 +417,32 @@
         function renderAdminTable(queues) {
             const adminTbody = document.getElementById('admin-queue-tbody');
             adminTbody.innerHTML = '';
-            
             if(queues.length === 0) {
                 adminTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">ไม่มีข้อมูลคิวให้จัดการ</td></tr>`;
                 return;
             }
-
             queues.forEach(q => {
                 const tr = document.createElement('tr');
+                const qId = q.id || q["ID"];
+                const qNum = q.queue_number || q["คิว"];
+                const fName = q.fullname || q["ชื่อ-นามสกุล"];
+                const comp = q.company || q["บริษัท"];
+                const ph = q.phone || q["เบอร์โทรศัพท์"];
+                const cType = q.car_type || q["ประเภทรถ"];
+                const lic = q.license_id || q["ทะเบียน"];
+                const stat = q.status || q["สถานะคิว"];
+
                 tr.innerHTML = `
-                    <td style="font-weight:bold;">${q.queue_number}</td>
-                    <td><strong>${q.fullname}</strong><br>${q.company}</td>
-                    <td><a href="tel:${q.phone}" style="color:var(--primary-color); font-weight:bold;">📞 ${q.phone}</a></td>
-                    <td>${q.car_type} (${q.license_id})</td>
-                    <td><span class="badge ${q.status==='serving'?'badge-serving':'badge-waiting'}">${q.status}</span></td>
+                    <td style="font-weight:bold;">${qNum}</td>
+                    <td><strong>${fName}</strong><br>${comp}</td>
+                    <td><a href="tel:${ph}" style="color:var(--primary-color); font-weight:bold;">📞 ${ph}</a></td>
+                    <td>${cType} (${lic})</td>
+                    <td><span class="badge ${stat==='serving'?'badge-serving':'badge-waiting'}">${stat}</span></td>
                     <td>
                         <div class="admin-actions">
-                            <button class="btn-admin btn-call" style="min-width: 80px; padding: 6px;" onclick="controlQueue('${q.id}', 'call')">เรียกคิว</button>
-                            <button class="btn-admin btn-move" style="min-width: 80px; padding: 6px;" onclick="controlQueue('${q.id}', 'move-end')">ย้ายท้าย</button>
-                            <button class="btn-admin btn-cancel" style="min-width: 80px; padding: 6px; background-color:#c62828;" onclick="controlQueue('${q.id}', 'cancel')">ยกเลิก</button>
+                            <button class="btn-admin btn-call" onclick="controlQueue('${qId}', 'call')">เรียกคิว</button>
+                            <button class="btn-admin btn-move" onclick="controlQueue('${qId}', 'move-end')">ย้ายท้าย</button>
+                            <button class="btn-admin btn-cancel" style="background-color:#c62828;" onclick="controlQueue('${qId}', 'cancel')">ยกเลิก</button>
                         </div>
                     </td>
                 `;
@@ -398,9 +457,7 @@
                 sessionStorage.setItem('isAdmin', 'true');
                 showToast("🔓 เข้าสู่ระบบผู้ดูแลระบบแล้ว");
                 renderAdminTable(cachedQueues);
-            } else { 
-                showToast("❌ รหัสผ่านไม่ถูกต้อง!"); 
-            }
+            } else { showToast("❌ รหัสผ่านไม่ถูกต้อง!"); }
         }
 
         function logoutAdmin() {
@@ -416,8 +473,6 @@
         }
 
         checkNotificationPermission();
-
-        // ดึงข้อมูลใหม่ทุกๆ 8 วินาที (Auto-refresh)
         setInterval(fetchDataFromSheets, 8000);
         fetchDataFromSheets();
     </script>
