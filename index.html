@@ -183,7 +183,6 @@
     <div id="toast">แจ้งเตือน</div>
 
     <div class="container">
-        <!-- ฝั่งซ้าย: บอร์ดเรียกคิว & ตั๋วคิวผู้ใช้ -->
         <div>
             <div class="now-serving-box">
                 <h2>📢 คิวที่กำลังเรียกบริการขณะนี้</h2>
@@ -211,7 +210,7 @@
                             ⏳ เหลืออีก <span class="num" id="modal-remaining-count">--</span> คิวจะถึงลำดับของคุณ
                         </div>
 
-                        <p style="color: #999; font-size: 0.75rem;">🔄 ระบบอัปเดตสถานะอัตโนมัติทุก 10 วินาที</p>
+                        <p style="color: #999; font-size: 0.75rem;">🔄 ระบบอัปเดตสถานะอัตโนมัติทุก 8 วินาที</p>
                         
                         <div class="ticket-divider"></div>
                         
@@ -230,7 +229,6 @@
             </div>
         </div>
 
-        <!-- ฝั่งขวา: ฟอร์มลงทะเบียน -->
         <div class="card">
             <h2>📝 ลงทะเบียนจองคิวรถ</h2>
             <form id="queue-form" style="margin-top: 1rem;">
@@ -272,7 +270,6 @@
             </form>
         </div>
 
-        <!-- โซนผู้ดูแลระบบ (Admin) -->
         <div class="admin-section card">
             <h2>🔒 พื้นที่ควบคุมสำหรับผู้ดูแลระบบ (Admin Control)</h2>
             
@@ -317,7 +314,7 @@
         const ADMIN_PASSWORD = "grkorat007"; 
 
         let cachedQueues = [];
-        let hasAlertedDone = false; // ตัวแปรล็อกไม่ให้แจ้งเตือนเสียง Done ซ้ำๆ
+        let hasAlertedDone = false; 
 
         function showToast(message) {
             const x = document.getElementById("toast");
@@ -337,12 +334,7 @@
             if ("Notification" in window && Notification.permission === "granted") {
                 new Notification("📢 ประกาศเรียกคิวใหม่!", { body: `คิวหมายเลข ${queueNumber} กรุณาเลื่อนรถเข้าจุดรับ-ส่งสินค้าค่ะ` });
             }
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const msg = new SpeechSynthesisUtterance(`ขอเชิญคิวหมายเลข ${queueNumber.split('').join(' ')} ที่จุดรับส่งสินค้าค่ะ`);
-                msg.lang = 'th-TH'; msg.rate = 0.9;
-                window.speechSynthesis.speak(msg);
-            }
+            // ❌ เอาเสียงพูดขานคิวออกแล้วตามคำขอ
         }
 
         function triggerDoneAlert(queueNumber) {
@@ -350,13 +342,8 @@
             if ("Notification" in window && Notification.permission === "granted") {
                 new Notification("✅ สิ้นสุดการให้บริการ", { body: `คิวหมายเลข ${queueNumber} ทำรายการเสร็จสิ้นเรียบร้อยแล้ว ขอบคุณค่ะ` });
             }
-            if ('speechSynthesis' in window && !hasAlertedDone) {
-                window.speechSynthesis.cancel();
-                const msg = new SpeechSynthesisUtterance(`คิวหมายเลข ${queueNumber.split('').join(' ')} ทำรายการเสร็จสิ้นเรียบร้อยแล้วค่ะ ขอบคุณค่ะ`);
-                msg.lang = 'th-TH'; msg.rate = 0.9;
-                window.speechSynthesis.speak(msg);
-                hasAlertedDone = true; 
-            }
+            // ❌ เอาเสียงพูดขานคิวออกแล้วตามคำขอ
+            hasAlertedDone = true;
         }
 
         function updateTicketPanel(queues) {
@@ -370,123 +357,206 @@
                 return;
             }
 
-            const myQueueIndex = queues.findIndex(q => (q.queue_number || q["คิว"]) === myQueueNumber);
-            
-            if (myQueueIndex !== -1) {
-                const myData = queues[myQueueIndex];
-                const stat = myData.status || myData["สถานะคิว"];
+            // ค้นหาข้อมูลคิวของตัวเองในระบบ
+            const myQueue = queues.find(q => q.queue_number === myQueueNumber);
 
-                // กรณีแอดมินกดยกเลิกไปดื้อๆ ให้เคลียร์หน้าจอ
-                if (stat === 'cancel') {
-                    sessionStorage.removeItem('myQueueNumber');
-                    emptyMsg.style.display = 'block';
-                    ticketCard.style.display = 'none';
-                    return;
-                }
-
+            if (myQueue) {
                 emptyMsg.style.display = 'none';
                 ticketCard.style.display = 'block';
+                
+                document.getElementById('modal-queue-num').textContent = myQueue.queue_number;
+                document.getElementById('modal-name').textContent = myQueue.fullname || "-";
+                document.getElementById('modal-license').textContent = myQueue.license_id || "-";
+                document.getElementById('modal-company').textContent = myQueue.company || "-";
+                document.getElementById('modal-time').textContent = myQueue.time || "-";
 
-                document.getElementById('modal-queue-num').innerText = myQueueNumber;
-                document.getElementById('modal-name').innerText = myData.fullname || myData["ชื่อ-นามสกุล"];
-                document.getElementById('modal-license').innerText = myData.license_id || myData["ทะเบียน"];
-                document.getElementById('modal-company').innerText = myData.company || myData["บริษัท"];
-                document.getElementById('modal-time').innerText = myData.timestamp || myData["เวลาบันทึก"] || "-";
-
-                const remainingContainer = document.getElementById('modal-remaining-container');
                 const headerBg = document.getElementById('ticket-header-bg');
-                const headerTitle = document.getElementById('ticket-header-title');
+                const remainingContainer = document.getElementById('modal-remaining-container');
                 const footerArea = document.getElementById('ticket-footer-area');
 
-                // --- เช็คสถานะคิวเพื่อแสดงผลให้ตรงกับผู้ใช้งาน ---
-                if (stat === 'done') {
-                    // แจ้งเตือนลูกค้าว่าทำรายการจบแล้ว
-                    triggerDoneAlert(myQueueNumber);
-
-                    headerBg.style.background = '#455a64'; // เปลี่ยนหัวตั๋วเป็นสีเทาเข้ม
-                    headerTitle.innerText = "✅ เช็คเอาท์เสร็จสิ้น";
+                if (myQueue.status === 'serving') {
+                    headerBg.style.backgroundColor = "var(--success-color)";
+                    document.getElementById('ticket-header-title').textContent = "🟢 ถึงคิวของคุณแล้ว";
+                    remainingContainer.style.backgroundColor = "#d4edda";
+                    remainingContainer.style.color = "#155724";
+                    remainingContainer.style.borderColor = "#c3e6cb";
+                    remainingContainer.innerHTML = "🎉 ถึงคิวแล้ว! กรุณาขับรถเข้าช่องบริการหลักทันที";
+                    hasAlertedDone = false; 
+                } 
+                else if (myQueue.status === 'done') {
+                    headerBg.style.backgroundColor = "#757575";
+                    document.getElementById('ticket-header-title').textContent = "🏁 สิ้นสุดการให้บริการ";
+                    remainingContainer.style.backgroundColor = "#e2e3e5";
+                    remainingContainer.style.color = "#383d41";
+                    remainingContainer.style.borderColor = "#d6d8db";
+                    remainingContainer.innerHTML = "✅ เสร็จสิ้นรายการแล้ว ขอบคุณที่ใช้บริการค่ะ";
                     
-                    remainingContainer.style.backgroundColor = '#d1ecf1';
-                    remainingContainer.style.color = '#0c5460';
-                    remainingContainer.style.borderColor = '#bee5eb';
-                    remainingContainer.innerHTML = "🏁 <strong>สิ้นสุดการให้บริการเรียบร้อยแล้ว</strong><br>ขอบคุณที่ใช้บริการค่ะ เดินทางปลอดภัย";
+                    // ปรับปุ่มให้คนขับกดยอมรับเพื่อปิดตั๋วใบเก่าและจองใหม่ได้
+                    footerArea.innerHTML = `<button class="btn-ticket-cancel" style="width:100%; background-color: var(--info-color);" onclick="clearFinishedSession()">👍 รับทราบ (ปิดหน้าจอนี้)</button>`;
+                } 
+                else {
+                    // สถานะ waiting (รอคิว)
+                    headerBg.style.backgroundColor = "var(--primary-color)";
+                    document.getElementById('ticket-header-title').textContent = "🎫 บัตรคิวออนไลน์ของคุณ";
                     
-                    // เปลี่ยนปุ่มด้านล่างให้เป็นปุ่มรับทราบเพื่อเคลียร์หน้าจอจองใหม่
-                    footerArea.innerHTML = `<button style="background:#455a64;" onclick="abandonMyTicket()">👍 รับทราบ (ปิดหน้าจอนี้)</button>`;
-
-                } else if (stat === 'serving') {
-                    headerBg.style.background = 'var(--success-color)';
-                    headerTitle.innerText = "📢 กำลังรับบริการ";
+                    // คำนวณจำนวนคิวที่เหลือก่อนหน้า
+                    const myIndex = queues.findIndex(q => q.queue_number === myQueueNumber);
+                    const remainingCount = queues.slice(0, myIndex).filter(q => q.status === 'waiting').length;
                     
-                    remainingContainer.style.backgroundColor = '#d4edda';
-                    remainingContainer.style.color = '#155724';
-                    remainingContainer.style.borderColor = '#c3e6cb';
-                    remainingContainer.innerHTML = "🎉 ถึงคิวบริการของคุณแล้ว! โปรดเคลื่อนรถเข้าจุดบริการ";
-                    
-                    footerArea.innerHTML = `
-                        <button class="btn-ticket-print" onclick="window.print()">🖨️ พิมพ์/เซฟบัตรคิว</button>
-                        <button class="btn-ticket-cancel" onclick="abandonMyTicket()">❌ ออกจากคิวนี้</button>
-                    `;
-                } else {
-                    // สถานะ waiting รอคิวปกติ
-                    headerBg.style.background = 'var(--primary-color)';
-                    headerTitle.innerText = "🎫 บัตรคิวออนไลน์ของคุณ";
-                    hasAlertedDone = false; // รีเซ็ตตัวแจ้งเตือน
-
-                    let remainingCount = 0;
-                    for (let i = 0; i < myQueueIndex; i++) {
-                        const currentStatus = queues[i].status || queues[i]["สถานะคิว"];
-                        if (currentStatus === 'waiting') {
-                            remainingCount++;
-                        }
-                    }
-                    remainingContainer.style.backgroundColor = '#fff3cd';
-                    remainingContainer.style.color = '#856404';
-                    remainingContainer.style.borderColor = '#ffeeba';
+                    remainingContainer.style.backgroundColor = "#fff3cd";
+                    remainingContainer.style.color = "#856404";
+                    remainingContainer.style.borderColor = "#ffeeba";
                     remainingContainer.innerHTML = `⏳ เหลืออีก <span class="num">${remainingCount}</span> คิวจะถึงลำดับของคุณ`;
-                    
-                    footerArea.innerHTML = `
-                        <button class="btn-ticket-print" onclick="window.print()">🖨️ พิมพ์/เซฟบัตรคิว</button>
-                        <button class="btn-ticket-cancel" onclick="abandonMyTicket()">❌ ออกจากคิวนี้</button>
-                    `;
+                    hasAlertedDone = false;
                 }
             } else {
-                sessionStorage.removeItem('myQueueNumber');
+                // หากคิวโดนลบจากหน้าชีตตรงๆ
                 emptyMsg.style.display = 'block';
                 ticketCard.style.display = 'none';
             }
         }
 
-        function abandonMyTicket() {
+        function clearFinishedSession() {
             sessionStorage.removeItem('myQueueNumber');
-            hasAlertedDone = false;
-            fetchDataFromSheets();
+            location.reload();
         }
 
-        function fetchDataFromSheets() {
+        function abandonMyTicket() {
+            if (confirm("คุณต้องการออกจากคิวนี้ใช่หรือไม่?")) {
+                const myQueueNumber = sessionStorage.getItem('myQueueNumber');
+                const myQueue = cachedQueues.find(q => q.queue_number === myQueueNumber);
+                if (myQueue && myQueue.id) {
+                    showToast("⏳ กำลังยกเลิกคิวของคุณ...");
+                    fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: myQueue.id, action: 'cancel' })
+                    }).then(() => {
+                        sessionStorage.removeItem('myQueueNumber');
+                        showToast("❌ ยกเลิกการจองคิวเรียบร้อย");
+                        setTimeout(() => { location.reload(); }, 1200);
+                    });
+                } else {
+                    sessionStorage.removeItem('myQueueNumber');
+                    location.reload();
+                }
+            }
+        }
+
+        // --- ระบบดึงข้อมูลและการเรนเดอร์ตารางแอดมินแบบสมบูรณ์ ---
+        function fetchData() {
             fetch(GOOGLE_SCRIPT_URL)
-                .then(res => res.json())
-                .then(data => {
-                    const oldServing = document.getElementById('current-serving-number').innerText;
-                    document.getElementById('current-serving-number').innerText = data.currentServing;
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('current-serving-number').textContent = data.currentServing || "--";
+                
+                // ระบบดักจับสถานะเพื่อแจ้งเตือน Notification (หน้ารถของตนเอง)
+                const myQueueNumber = sessionStorage.getItem('myQueueNumber');
+                if (myQueueNumber) {
+                    const oldData = cachedQueues.find(q => q.queue_number === myQueueNumber);
+                    const newData = data.queues.find(q => q.queue_number === myQueueNumber);
                     
-                    if(data.currentServing !== "--" && data.currentServing !== oldServing && oldServing !== "--") {
-                        triggerQueueAlert(data.currentServing);
+                    if (newData && oldData) {
+                        if (newData.status === 'serving' && oldData.status !== 'serving') {
+                            triggerQueueAlert(myQueueNumber);
+                        }
+                        if (newData.status === 'done' && oldData.status !== 'done') {
+                            triggerDoneAlert(myQueueNumber);
+                        }
                     }
+                }
 
-                    cachedQueues = data.queues;
-                    updateTicketPanel(cachedQueues);
-
-                    if(sessionStorage.getItem('isAdmin') === 'true') { renderAdminTable(cachedQueues); }
-                })
-                .catch(err => console.error("Error fetching:", err));
+                cachedQueues = data.queues;
+                updateTicketPanel(data.queues);
+                renderAdminTable(data.queues);
+            })
+            .catch(err => console.error("Error connecting server:", err));
         }
 
+        function renderAdminTable(queues) {
+            const tbody = document.getElementById('admin-queue-tbody');
+            if (sessionStorage.getItem('isAdmin') !== 'true') return;
+
+            // กรองให้เห็นเฉพาะคิวที่ยังไม่จบรายการ (waiting และ serving) เพื่อจัดระเบียบบอร์ดแอดมิน
+            const activeQueues = queues.filter(q => q.status !== 'done' && q.status !== 'cancel');
+
+            if (activeQueues.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888; padding:1.5rem;">ไม่มีรายการคิวคงค้างในขณะนี้</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = "";
+            activeQueues.forEach(q => {
+                const tr = document.createElement('tr');
+                if (q.status === 'serving') tr.style.backgroundColor = "#e8f5e9"; // ไฮไลท์สีเขียวอ่อนตอนกำลังเรียกบริการ
+
+                let statusBadge = `<span class="badge badge-waiting">รอเรียกคิว</span>`;
+                if (q.status === 'serving') statusBadge = `<span class="badge badge-serving">กำลังบริการ</span>`;
+
+                tr.innerHTML = `
+                    <td style="font-size:1.2rem; font-weight:bold; color:var(--primary-color);">${q.queue_number}</td>
+                    <td><b>${q.fullname}</b><br><span style="font-size:0.8rem; color:#666;">${q.company}</span></td>
+                    <td>${q.phone}</td>
+                    <td>${q.car_type} / <span style="color:blue;">${q.license_id}</span><br><span style="font-size:0.75rem; color:#777;">สินค้า: ${q.product} (${q.quantity})</span></td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div class="admin-actions">
+                            <button class="btn-admin btn-call" onclick="controlQueue('${q.id}', 'call')">เรียกคิว</button>
+                            <button class="btn-admin btn-done" onclick="controlQueue('${q.id}', 'done')">เสร็จสิ้น</button>
+                            <button class="btn-admin btn-move" onclick="controlQueue('${q.id}', 'move-end')">ย้ายท้าย</button>
+                            <button class="btn-admin btn-cancel" onclick="controlQueue('${q.id}', 'cancel')">ยกเลิก</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function controlQueue(id, action) {
+            let msg = "คุณต้องการดำเนินการกับคิวนี้ใช่หรือไม่?";
+            if (action === 'call') msg = "ต้องการเรียกคิวนี้เข้าจุดบริการใช่หรือไม่?";
+            if (action === 'done') msg = "ยืนยันการเสร็จสิ้นบริการคิวนี้ใช่หรือไม่?";
+            if (action === 'move-end') msg = "ต้องการย้ายคิวนี้ไปต่อท้ายแถวสุดใช่หรือไม่?";
+            if (action === 'cancel') msg = "❗ ยืนยันการลบคิวนี้ออกจากระบบใช่หรือไม่?";
+
+            if (confirm(msg)) {
+                showToast("⏳ กำลังส่งคำสั่งควบคุม...");
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, action: action })
+                }).then(() => {
+                    showToast("✅ ดำเนินการสำเร็จ");
+                    setTimeout(fetchData, 1200);
+                });
+            }
+        }
+
+        function clearAllQueues() {
+            if (confirm("🚨 เตือนขั้นวิกฤต!\nคุณแน่ใจใช่ไหมที่จะลบข้อมูลคิวรถทุกคิวออกจากระบบอย่างถาวร?")) {
+                showToast("🧹 กำลังเคลียร์ฐานข้อมูล...");
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'clear-all' })
+                }).then(() => {
+                    sessionStorage.removeItem('myQueueNumber');
+                    showToast("🧹 ล้างคิวทั้งหมดสำเร็จ!");
+                    setTimeout(() => { location.reload(); }, 1200);
+                });
+            }
+        }
+
+        // --- ระบบส่งฟอร์มลงทะเบียนคิวใหม่ ---
         document.getElementById('queue-form').addEventListener('submit', function(e) {
             e.preventDefault();
-            const submitBtn = document.getElementById('submit-btn');
-            submitBtn.disabled = true;
-            submitBtn.innerText = "⏳ กำลังบันทึกข้อมูล...";
+            
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.textContent = "⌛ กำลังบันทึกคิว...";
 
             const payload = {
                 fullname: document.getElementById('fullname').value,
@@ -499,121 +569,68 @@
             };
 
             fetch(GOOGLE_SCRIPT_URL, {
-                method: "POST",
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             })
-            .then(res => res.json())
-            .then(res => {
-                if(res.status === "success") {
-                    document.getElementById('queue-form').reset();
-                    sessionStorage.setItem('myQueueNumber', res.queue_number);
-                    hasAlertedDone = false;
-                    showToast("🎉 จองคิวสำเร็จ! บัตรคิวแสดงที่ฝั่งซ้ายใต้บอร์ดเรียกคิวแล้ว");
-                    fetchDataFromSheets();
-                } else { alert("เกิดข้อผิดพลาด: " + res.error); }
+            .then(() => {
+                showToast("✨ จองคิวสำเร็จ! ระบบกำลังดึงตั๋วของคุณ...");
+                document.getElementById('queue-form').reset();
+                
+                // ให้ฝั่งหน้าเว็บส่งดึงค่าเพื่อตรวจสอบเลขคิวล่าสุดที่พึ่งสร้างเสร็จ
+                setTimeout(() => {
+                    fetch(GOOGLE_SCRIPT_URL)
+                    .then(r => r.json())
+                    .then(res => {
+                        btn.disabled = false;
+                        btn.innerHTML = "🏢 ยืนยันการจองคิว";
+                        
+                        if (res.queues && res.queues.length > 0) {
+                            // หาแถวสุดท้ายที่เบอร์โทรหรือชื่อตรงกันมาผูกมัดเซสชัน
+                            const match = res.queues.reverse().find(q => q.phone === payload.phone);
+                            if (match) {
+                                sessionStorage.setItem('myQueueNumber', match.queue_number);
+                            }
+                        }
+                        fetchData();
+                    });
+                }, 1500);
             })
-            .catch(err => alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้"))
-            .finally(() => {
-                submitBtn.disabled = false;
-                submitBtn.innerText = "🏢 ยืนยันการจองคิว";
+            .catch(err => {
+                showToast("❌ การเชื่อมต่อขัดข้อง");
+                btn.disabled = false;
+                btn.innerHTML = "🏢 ยืนยันการจองคิว";
             });
         });
 
-        function controlQueue(id, action) {
-            let label = action === 'call' ? 'เรียกคิว' : action === 'done' ? 'เสร็จสิ้นคิว' : action === 'move-end' ? 'ย้ายท้าย' : 'ยกเลิกคิว';
-            if(!confirm(`คุณแน่ใจหรือไม่ที่จะทำการ [${label}] กับคิวนี้?`)) return;
-            
-            fetch(GOOGLE_SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify({ id: id, action: action })
-            })
-            .then(res => res.json())
-            .then(res => {
-                if(res.status === "success") { 
-                    showToast(`💾 อัปเดตสถานะเป็น [${action}] สำเร็จ`); 
-                    fetchDataFromSheets(); 
-                }
-            });
-        }
-
-        function clearAllQueues() {
-            if(!confirm("⚠️ ยืนยันที่จะลบข้อมูลคิวทั้งหมดในระบบหรือไม่?")) return;
-            fetch(GOOGLE_SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: 'clear-all' }) })
-            .then(res => res.json())
-            .then(res => { if(res.status === "success") { showToast("🗑️ ล้างฐานข้อมูลเรียบร้อย"); fetchDataFromSheets(); } });
-        }
-
-        function renderAdminTable(queues) {
-            const adminTbody = document.getElementById('admin-queue-tbody');
-            adminTbody.innerHTML = '';
-            
-            // แอดมินจะมองเห็นคิวที่กำลังรอ (waiting) และคิวที่กำลังเรียก (serving) เป็นหลัก คิวที่เสร็จสิ้น (done) แล้วจะถูกซ่อนออกจากตารางเพื่อความสะอาด
-            const activeQueues = queues.filter(q => (q.status || q["สถานะคิว"]) !== 'done' && (q.status || q["สถานะคิว"]) !== 'cancel');
-
-            if(activeQueues.length === 0) {
-                adminTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">ไม่มีข้อมูลคิวที่กำลังดำเนินงานในระบบขณะนี้</td></tr>`;
-                return;
-            }
-            
-            activeQueues.forEach(q => {
-                const tr = document.createElement('tr');
-                const qId = q.id || q["ID"];
-                const qNum = q.queue_number || q["คิว"];
-                const fName = q.fullname || q["ชื่อ-นามสกุล"];
-                const comp = q.company || q["บริษัท"];
-                const ph = q.phone || q["เบอร์โทรศัพท์"];
-                const cType = q.car_type || q["ประเภทรถ"];
-                const lic = q.license_id || q["ทะเบียน"];
-                const stat = q.status || q["สถานะคิว"];
-
-                let badgeClass = 'badge-waiting';
-                if(stat === 'serving') badgeClass = 'badge-serving';
-
-                tr.innerHTML = `
-                    <td style="font-weight:bold; font-size: 1.1rem;">${qNum}</td>
-                    <td><strong>${fName}</strong><br><span style="color:#666; font-size:0.85rem;">${comp}</span></td>
-                    <td><a href="tel:${ph}" style="color:var(--primary-color); font-weight:bold; text-decoration:none;">📞 ${ph}</a></td>
-                    <td>${cType}<br><span style="color:#555; font-size:0.85rem;">(${lic})</span></td>
-                    <td><span class="badge ${badgeClass}">${stat}</span></td>
-                    <td>
-                        <div class="admin-actions">
-                            <button class="btn-admin btn-call" onclick="controlQueue('${qId}', 'call')">เรียกคิว</button>
-                            <button class="btn-admin btn-done" onclick="controlQueue('${qId}', 'done')">เสร็จ</button>
-                            <button class="btn-admin btn-move" onclick="controlQueue('${qId}', 'move-end')">ย้ายท้าย</button>
-                            <button class="btn-admin btn-cancel" onclick="controlQueue('${qId}', 'cancel')">ยกเลิก</button>
-                        </div>
-                    </td>
-                `;
-                adminTbody.appendChild(tr);
-            });
-        }
-
         function loginAdmin() {
             if (document.getElementById('admin-pass').value === ADMIN_PASSWORD) {
+                sessionStorage.setItem('isAdmin', 'true');
                 document.getElementById('admin-auth-panel').style.display = 'none';
                 document.getElementById('admin-dashboard').style.display = 'block';
-                sessionStorage.setItem('isAdmin', 'true');
-                showToast("🔓 เข้าสู่ระบบผู้ดูแลระบบแล้ว");
-                renderAdminTable(cachedQueues);
-            } else { showToast("❌ รหัสผ่านไม่ถูกต้อง!"); }
+                showToast("🔓 เข้าสู่ระบบแอดมินแล้ว");
+                fetchData();
+            } else {
+                showToast("❌ รหัสผ่านไม่ถูกต้อง");
+            }
         }
 
         function logoutAdmin() {
             sessionStorage.removeItem('isAdmin');
             document.getElementById('admin-auth-panel').style.display = 'block';
             document.getElementById('admin-dashboard').style.display = 'none';
-            document.getElementById('admin-pass').value = '';
         }
 
-        if(sessionStorage.getItem('isAdmin') === 'true') {
+        // โหลดข้อมูลอัตโนมัติเมื่อเข้าหน้าเว็บ
+        if (sessionStorage.getItem('isAdmin') === 'true') {
             document.getElementById('admin-auth-panel').style.display = 'none';
             document.getElementById('admin-dashboard').style.display = 'block';
         }
 
         checkNotificationPermission();
-        
-        setInterval(fetchDataFromSheets, 10000);
-        fetchDataFromSheets(); 
+        fetchData();
+        setInterval(fetchData, 8000); // วนลูปเช็คสถานะทุก 8 วินาทีตามสไตล์แอปเดิม
     </script>
 </body>
 </html>
