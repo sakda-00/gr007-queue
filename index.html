@@ -149,7 +149,8 @@
 
     <script>
         const ADMIN_PASSWORD = "grkorat007";
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyNauXU0U0i0hmszpU27HN6WrS2UhdHo8wmsn5QjSaO2L6sh5Vzk08kXMfxos5Otmyp/exec"; 
+        // 🌟 อัปเดตลิงก์สคริปต์ใหม่เรียบร้อยแล้วครับ
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsObXS_U-ZTBt-d4bIvAmCOMisXfcIaBHyd4jHSY_tGhw0nMWe-2m5WPsajt78ReNO/exec"; 
 
         let myQueueId = sessionStorage.getItem('myQueueId') || null;
         let localQueuesCache = [];
@@ -261,7 +262,6 @@
                 btn.className = "btn btn-loading";
                 btn.textContent = "กำลังส่งข้อมูลลงคิวระบบ...";
 
-                // 🌟 แก้ไข: นำ mode: 'no-cors' ออกเพื่อให้ดึงข้อมูลหลังจากบันทึกได้ถูกต้อง
                 fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -335,4 +335,4 @@
                             if (previousMyStatus !== 'serving') {
                                 playUserSirenSound();
                                 setTimeout(() => { speakQueue(myQueue.queue_number); }, 900);
-                                showToast(`🚨
+                                showToast(`🚨 ถึงคิวรับบริการของคุณแล้ว! (${myQueue
