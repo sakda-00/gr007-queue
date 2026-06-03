@@ -386,7 +386,6 @@
             .catch(err => console.error("Error connecting server:", err));
         }
 
-        // 🛠️ ปรับปรุงจุดนี้: ดึงค่าสะท้อนกลับจาก Google Script ทันทีโดยไม่ต้องรอลูป
         document.getElementById('queue-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const btn = document.getElementById('submit-btn');
@@ -403,7 +402,6 @@
                 license_id: document.getElementById('license_id').value
             };
 
-            // เปลี่ยนโหมดการเรียกแบบ CORS เพื่อรับ Object ข้อมูลกลับมาจาก Google Script หลังบันทึกเสร็จ
             fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'cors',
@@ -416,18 +414,24 @@
                 btn.innerHTML = "🏢 ยืนยันการจองคิว";
 
                 if (resData.status === "success" && resData.queue_number) {
-                    // บันทึกหมายเลขคิวลงในเครื่องผู้ใช้งานโดยตรงทันที มั่นใจได้ว่าตั๋วจะขึ้นแน่นอน
                     sessionStorage.setItem('myQueueNumber', resData.queue_number);
                     showToast(`✨ จองคิวสำเร็จ! หมายเลขของคุณคือ ${resData.queue_number}`);
                     document.getElementById('queue-form').reset();
-                    fetchData(); // อัปเดตหน้าจอแสดงตั๋วทันที
+                    
+                    // 🚀 เพิ่มคำสั่งเลื่อนขึ้นด้านบนสุดโดยอัตโนมัติ (Smooth Scroll)
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+
+                    fetchData(); 
                 } else {
                     showToast("❌ เกิดข้อผิดพลาดในการรับหมายเลขคิว");
                 }
             })
             .catch(err => {
                 console.error(err);
-                showToast("❌ การเชื่อมต่อขัดข้อง หรือ Google Script ไม่ตอบกลับแบบ JSON");
+                showToast("❌ การเชื่อมต่อขัดข้อง");
                 btn.disabled = false;
                 btn.innerHTML = "🏢 ยืนยันการจองคิว";
             });
