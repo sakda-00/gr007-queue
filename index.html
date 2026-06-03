@@ -337,4 +337,199 @@
             fetch(GOOGLE_SCRIPT_URL)
             .then(res => res.json())
             .then(data => {
-                document.getElementById('now-serving').textContent = data.current
+                document.getElementById('now-serving').textContent = data.currentServing;
+                localQueuesCache = data.queues;
+                
+                // 1. แจ้งเตือนแอดมินเมื่อมีคนขับรถกดลงทะเบียนคิวใหม่เข้ามา
+                if (sessionStorage.getItem('isAdmin') === 'true') {
+                    const currentWaitingCount = data.queues.filter(q => q.status === 'waiting').length;
+                    if (currentWaitingCount > previousTotalQueuesCount) {
+                        playAdminNotificationSound();
+                        showToast("📢 แจ้งเตือน: มีคิวใหม่จองเข้ามา!");
+                        sendSystemPushNotification("มีคิวลงทะเบียนใหม่ 📥", "กรุณาตรวจสอบรายชื่อคิวรถที่รอเข้าโกดังในตาราง");
+                    }
+                    previousTotalQueuesCount = currentWaitingCount;
+                }
+
+                // 2. แจ้งเตือนคนขับรถเมื่อโดนเรียกคิว (ทำงานแม้พับหน้าจอบราวเซอร์อยู่)
+                if (myQueueId) {
+                    let myQueue = data.queues.find(q => q.id === myQueueId);
+                    if (myQueue) {
+                        if (myQueue.status === 'serving' && previousMyStatus !== 'serving') {
+                            playUserSirenSound();
+                            setTimeout(() => { speakQueue(myQueue.queue_number); }, 900);
+                            showToast(`🚨 ถึงคิวรับบริการของคุณแล้ว! (${myQueue.queue_number})`);
+                            
+                            // 📱 ยิง Notification เด้งขึ้นหน้าจอมือถือคนขับ
+                            sendSystemPushNotification(
+                                ` ถึงคิวของคุณแล้ว! 🎉`, 
+                                `หมายเลข ${myQueue.queue_number} กรุณานำรถเข้าช่องรับบริการทันทีค่ะ`
+                            );
+                        }
+                        previousMyStatus = myQueue.status;
+                    }
+                }
+                renderDOM(data.queues, data.currentServing);
+            })
+            .catch(err => console.error("Error fetching rows:", err));
+        }
+
+        // --- ฟังก์ชันส่งคำสั่งควบคุมเดี่ยว ---
+        function controlQueue(id, action) {
+            let confirmationText = "";
+            if (action === 'call') confirmationText = "ต้องการเรียกคิวนี้ขึ้นรับบริการใช่หรือไม่?";
+            if (action === 'move-end') confirmationText = "ต้องการย้ายคิวนี้ไปต่อท้ายแถวสุดใช่หรือไม่?";
+            if (action === 'cancel') confirmationText = "❗ ต้องการลบคิวนี้ออกจากฐานข้อมูลใช่หรือไม่?";
+
+            if (confirm(confirmationText)) {
+                showToast("⏳ กำลังดำเนินการ...");
+                if (action === 'move-end' || action === 'cancel') {
+                    previousTotalQueuesCount = Math.max(0, previousTotalQueuesCount - 1);
+                }
+
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, action: action })
+                })
+                .then(() => {
+                    if (action === 'cancel' && myQueueId === id) {
+                        myQueueId = null;
+                        sessionStorage.removeItem('myQueueId');
+                        previousMyStatus = "";
+                    }
+                    showToast("✅ ดำเนินการสำเร็จ กำลังโหลดข้อมูลใหม่...");
+                    setTimeout(() => { fetchDataFromSheets(); }, 1500);
+                })
+                .catch(err => showToast("❌ เกิดข้อผิดพลาดในการส่งคำสั่ง"));
+            }
+        }
+
+        // 🧹 ฟังก์ชันปุ่มเคลียร์คิวทั้งหมดด้วยตนเอง
+        function clearAllQueuesManual() {
+            if (confirm("🚨 คำเตือนขั้นเด็ดขาด!\nคุณต้องการลบข้อมูลคิว 'ทั้งหมดทุกแถว' ออกจากฐานข้อมูล Google Sheets ใช่หรือไม่? (ข้อมูลจะหายถาวร)")) {
+                showToast("⏳ กำลังล้างฐานข้อมูลทั้งหมดใน Google Sheets...");
+                previousTotalQueuesCount = 0;
+
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'clear-all' })
+                })
+                .then(() => {
+                    myQueueId = null;
+                    sessionStorage.removeItem('myQueueId');
+                    previousMyStatus = "";
+                    showToast("🧹 ล้างฐานข้อมูลคิวทั้งหมดสำเร็จ!");
+                    setTimeout(() => { fetchDataFromSheets(); }, 1500);
+                })
+                .catch(err => showToast("❌ เกิดข้อผิดพลาดในการสั่งล้างข้อมูล"));
+            }
+        }
+
+        // --- ฟังก์ชันวาดผลข้อมูลลงหน้าจอ ---
+        function renderDOM(queues, currentServing) {
+            const waitingQueues = queues.filter(q => q.status === 'waiting');
+            document.getElementById('total-waiting').textContent = waitingQueues.length;
+
+            const ticketCard = document.getElementById('my-ticket-card');
+            if (myQueueId) {
+                let myQueue = queues.find(q => q.id === myQueueId);
+                if (myQueueId === "latest" && queues.length > 0) {
+                    myQueue = queues[queues.length - 1];
+                    myQueueId = myQueue.id;
+                    sessionStorage.setItem('myQueueId', myQueue.id);
+                }
+
+                if (myQueue) {
+                    ticketCard.style.display = 'block';
+                    document.getElementById('my-queue-number').textContent = myQueue.queue_number;
+                    document.getElementById('ticket-holder-name').textContent = `ผู้จอง: ${myQueue.fullname} | ทะเบียน: ${myQueue.license_id}`;
+
+                    const statusBadge = document.getElementById('ticket-status');
+                    if (myQueue.status === 'serving') {
+                        statusBadge.textContent = "ถึงคิวของคุณแล้ว! กรุณาติดต่อเจ้าหน้าที่";
+                        statusBadge.className = "ticket-status-badge status-serving";
+                        document.getElementById('remaining-count-text').innerHTML = "<strong style='color: var(--success-color);'>เชิญที่ช่องบริการหลัก</strong>";
+                    } else {
+                        statusBadge.textContent = "รอเรียกคิว";
+                        statusBadge.className = "ticket-status-badge status-waiting";
+                        let myIndex = queues.findIndex(q => q.id === myQueue.id);
+                        let remainingCount = queues.slice(0, myIndex).filter(q => q.status === 'waiting').length;
+                        document.getElementById('remaining-count-text').innerHTML = `เหลืออีก <strong style="color: var(--primary-color); font-size: 1.4rem;">${remainingCount}</strong> คิวจะถึงตาคุณ`;
+                    }
+                } else if (myQueueId !== "latest") { ticketCard.style.display = 'none'; }
+            } else { ticketCard.style.display = 'none'; }
+
+            const adminTbody = document.getElementById('admin-queue-list');
+            if(sessionStorage.getItem('isAdmin') === 'true') {
+                adminTbody.innerHTML = '';
+                if(queues.length === 0) {
+                    adminTbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999; padding: 2rem 0;">ไม่มีรายการคิวสินค้าในขณะนี้</td></tr>`;
+                    return;
+                }
+
+                queues.forEach(q => {
+                    const tr = document.createElement('tr');
+                    if (q.status === 'serving') {
+                        tr.style.backgroundColor = '#ffebee';
+                        tr.style.fontWeight = 'bold';
+                    }
+
+                    tr.innerHTML = `
+                        <td style="font-size:1.1rem; color:var(--primary-color); text-align: center; vertical-align: middle;"><b>${q.queue_number}</b></td>
+                        <td>
+                            <div class="queue-details">
+                                <b>ชื่อ:</b> ${q.fullname}<br>
+                                <b>โทร:</b> ${q.phone}<br>
+                                <b>บริษัท:</b> ${q.company}<br>
+                                <b>สินค้า:</b> ${q.product}<br>
+                                <b>จำนวนสินค้า:</b> ${q.quantity}<br>
+                                <b>ประเภทรถ:</b> ${q.car_type || "-"}<br>
+                                <b>ทะเบียน:</b> ${q.license_id || "-"}
+                            </div>
+                        </td>
+                        <td style="text-align: center; vertical-align: middle;">
+                            <div class="action-btns" style="display: flex; flex-direction: column; gap: 5px; justify-content: center; align-items: center;">
+                                <button class="btn-sm btn-call" style="background-color: var(--success-color); width: 80px; padding: 6px;" onclick="controlQueue('${q.id}', 'call')">เรียกคิว</button>
+                                <button class="btn-sm btn-move" style="background-color: var(--warning-color); width: 80px; padding: 6px;" onclick="controlQueue('${q.id}', 'move-end')">ย้ายท้าย</button>
+                                <button class="btn-sm btn-cancel" style="background-color: var(--primary-color); width: 80px; padding: 6px;" onclick="controlQueue('${q.id}', 'cancel')">ยกเลิก</button>
+                            </div>
+                        </td>
+                    `;
+                    adminTbody.appendChild(tr);
+                });
+            }
+        }
+
+        function loginAdmin() {
+            if (document.getElementById('admin-pass').value === ADMIN_PASSWORD) {
+                document.getElementById('admin-auth-panel').style.display = 'none';
+                document.getElementById('admin-dashboard').style.display = 'block';
+                sessionStorage.setItem('isAdmin', 'true');
+                showToast("🔓 เข้าสู่ระบบผู้ดูแลระบบแล้ว");
+                fetchDataFromSheets();
+            } else { showToast("❌ รหัสผ่านไม่ถูกต้อง!"); }
+        }
+
+        function logoutAdmin() {
+            sessionStorage.removeItem('isAdmin');
+            document.getElementById('admin-auth-panel').style.display = 'block';
+            document.getElementById('admin-dashboard').style.display = 'none';
+        }
+
+        if(sessionStorage.getItem('isAdmin') === 'true') {
+            document.getElementById('admin-auth-panel').style.display = 'none';
+            document.getElementById('admin-dashboard').style.display = 'block';
+        }
+
+        // ตรวจสอบและเริ่มต้นขอสิทธิ์แจ้งเตือนตอนเข้าเว็บ
+        checkNotificationPermission();
+
+        setInterval(fetchDataFromSheets, 8000);
+        fetchDataFromSheets();
+    </script>
+</body>
+</html>
