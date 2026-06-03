@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบบัตรคิวส่งสินค้า</title>
+    <title>ระบบบัตรคิวส่งสินค้า GR KORAT</title>
     <style>
         :root {
             --primary-color: #d32f2f;
@@ -148,7 +148,7 @@
 <body>
 
     <header>
-        <h1>ระบบคิวรถขนส่งสินค้า GR.ST007</h1>
+        <h1>ระบบบัตรคิวรถขนส่งสินค้า GR.ST007</h1>
         <p>Makro Nakhon Ratchasima 1</p>
     </header>
 
@@ -159,20 +159,20 @@
             <div class="now-serving-box">
                 <h2>📦คิวที่กำลังลงสินค้าขณะนี้📦</h2>
                 <h1 id="current-serving-number">--</h1>
-                <p>กรุณาเตรียมพร้อมและเลื่อนรถเข้าจุดส่งสินค้า</p>
+                <p>กรุณาเตรียมพร้อมและเลื่อนรถเข้าจุดรับ-ส่งสินค้า</p>
             </div>
 
             <div class="ticket-container" id="ticket-display-area">
                 <div class="empty-ticket-msg" id="empty-ticket-msg">
                     <p style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎫</p>
-                    <p style="font-weight: bold; color: #555;">คุณยังไม่มีการจองคิวในเซสชันนี้</p>
-                    <p style="font-size: 0.85rem; margin-top: 0.3rem; color: #888;">เมื่อกรอกข้อมูลและลงทะเบียนที่ฟอร์มฝั่งขวา บัตรคิวออนไลน์พร้อมลำดับคิวคงเหลือจะแสดงขึ้นตรงนี้ทันที</p>
+                    <p style="font-weight: bold; color: #555;">คุณยังไม่มีการลงคิวในนี้</p>
+                    <p style="font-size: 0.85rem; margin-top: 0.3rem; color: #888;">เมื่อกรอกข้อมูลและลงทะเบียน บัตรคิวออนไลน์พร้อมลำดับคิวคงเหลือจะแสดงขึ้นตรงนี้ทันที</p>
                 </div>
 
                 <div class="ticket-card" id="my-active-ticket" style="display: none;">
                     <div class="ticket-header" id="ticket-header-bg">
-                        <h3 id="ticket-header-title">🎫 บัตรคิวออนไลน์ของคุณ</h3>
-                        <p>GR KORAT TRANSPORT</p>
+                        <h3 id="ticket-header-title">🎫บัตรคิวของคุณ🎫</h3>
+                        <p>📦📦📦</p>
                     </div>
                     <div class="ticket-body">
                         <p style="color: #666; font-weight: bold; font-size: 0.9rem;">หมายเลขคิวของคุณ</p>
@@ -236,9 +236,9 @@
                 </div>
                 <div class="form-group">
                     <label>ทะเบียนรถ *</label>
-                    <input type="text" id="license_id" required placeholder="เช่น มค0007/70-0007">
+                    <input type="text" id="license_id" required placeholder="เช่น 80-1234 นครราชสีมา">
                 </div>
-                <button type="submit" id="submit-btn">🏢 ยืนยันการจองคิว</button>
+                <button type="submit" id="submit-btn">ยืนยันการจองคิว</button>
             </form>
         </div>
     </div>
@@ -321,7 +321,7 @@
                 } 
                 else {
                     headerBg.style.backgroundColor = "var(--primary-color)";
-                    document.getElementById('ticket-header-title').textContent = "🎫 บัตรคิวออนไลน์ของคุณ";
+                    document.getElementById('ticket-header-title').textContent = "🎫บัตรคิวของคุณ🎫";
                     
                     const myIndex = queues.findIndex(q => q.queue_number === myQueueNumber);
                     const remainingCount = queues.slice(0, myIndex).filter(q => q.status === 'waiting').length;
@@ -380,4 +380,66 @@
                         if (newData.status === 'done' && oldData.status !== 'done') triggerDoneAlert(myQueueNumber);
                     }
                 }
-      
+                cachedQueues = data.queues;
+                updateTicketPanel(data.queues);
+            })
+            .catch(err => console.error("Error connecting server:", err));
+        }
+
+        document.getElementById('queue-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.textContent = "⌛ กำลังบันทึกคิว...";
+
+            const payload = {
+                fullname: document.getElementById('fullname').value,
+                phone: document.getElementById('phone').value,
+                company: document.getElementById('company').value,
+                product: document.getElementById('product').value,
+                quantity: document.getElementById('quantity').value,
+                car_type: document.getElementById('car_type').value,
+                license_id: document.getElementById('license_id').value
+            };
+
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(resData => {
+                btn.disabled = false;
+                btn.innerHTML = "🏢 ยืนยันการจองคิว";
+
+                if (resData.status === "success" && resData.queue_number) {
+                    sessionStorage.setItem('myQueueNumber', resData.queue_number);
+                    showToast(`✨ จองคิวสำเร็จ! หมายเลขของคุณคือ ${resData.queue_number}`);
+                    document.getElementById('queue-form').reset();
+                    
+                    // 🚀 เพิ่มคำสั่งเลื่อนขึ้นด้านบนสุดโดยอัตโนมัติ (Smooth Scroll)
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+
+                    fetchData(); 
+                } else {
+                    showToast("❌ เกิดข้อผิดพลาดในการรับหมายเลขคิว");
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast("❌ การเชื่อมต่อขัดข้อง");
+                btn.disabled = false;
+                btn.innerHTML = "🏢 ยืนยันการจองคิว";
+            });
+        });
+
+        checkNotificationPermission();
+        fetchData();
+        setInterval(fetchData, 3000);
+    </script>
+</body>
+</html>
