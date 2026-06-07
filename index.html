@@ -4,14 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบบัตรคิวส่งสินค้า GR KORAT</title>
-    
-    <!-- 🚀 ส่วนที่เพิ่มสำหรับ PWA (Progressive Web App) -->
-    <link rel="manifest" href="./manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="GR KORAT">
-    <link rel="apple-touch-icon" href="icon-192.png">
-
     <style>
         :root {
             --primary-color: #d32f2f;
@@ -26,7 +18,7 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; padding-bottom: 2rem; position: relative; }
+        body { background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; padding-bottom: 2rem; }
         
         header { 
             background-color: var(--primary-color); 
@@ -34,38 +26,10 @@
             padding: 1.5rem 1rem; 
             text-align: center; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-            position: relative;
         }
-        header h1 { font-size: 1.5rem; margin-bottom: 0.2rem; padding-right: 2rem; }
+        header h1 { font-size: 1.5rem; margin-bottom: 0.2rem; }
         header p { font-size: 0.9rem; opacity: 0.9; }
         
-        /* ⚙️ ปุ่มเชื่อมต่อไปหน้าแอดมิน (Floating Admin Button) */
-        .admin-float-btn {
-            position: absolute;
-            top: 50%;
-            right: 15px;
-            transform: translateY(-50%);
-            background-color: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.3rem;
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .admin-float-btn:hover {
-            background-color: var(--secondary-color);
-            color: var(--primary-color);
-            transform: translateY(-50%) scale(1.08);
-        }
-
         #toast {
             visibility: hidden; min-width: 280px; max-width: 90%; background-color: #333; color: #fff;
             text-align: center; border-radius: 8px; padding: 16px; position: fixed;
@@ -138,9 +102,8 @@
 
         @media (min-width: 768px) {
             header { padding: 2rem 1rem; }
-            header h1 { font-size: 2.2rem; padding-right: 0; }
+            header h1 { font-size: 2.2rem; }
             header p { font-size: 1.1rem; }
-            .admin-float-btn { right: 30px; width: 48px; height: 48px; font-size: 1.5rem; }
             .container { grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem auto; padding: 0 1.5rem; }
             .card { padding: 1.8rem; }
             .card h2 { font-size: 1.5rem; }
@@ -187,9 +150,6 @@
     <header>
         <h1>ระบบบัตรคิวรถขนส่งสินค้า GR.ST007</h1>
         <p>Makro Nakhon Ratchasima 1</p>
-        
-        <!-- ⚙️ ปุ่มทางเข้าหน้าแอดมิน (เปลี่ยนชื่อไฟล์ admin.html ให้ตรงกับชื่อไฟล์จริงของคุณนะครับ) -->
-        <a href="./admin.html" class="admin-float-btn" title="เข้าสู่ระบบแอดมิน">⚙️</a>
     </header>
 
     <div id="toast">แจ้งเตือน</div>
@@ -296,15 +256,6 @@
         }
 
         function checkNotificationPermission() {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./sw.js')
-                .then(function(reg) {
-                    console.log('PWA Service Worker Registered!', reg);
-                }).catch(function(err) {
-                    console.error('Service Worker Failed', err);
-                });
-            }
-
             if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
                 Notification.requestPermission();
             }
@@ -312,56 +263,15 @@
 
         function triggerQueueAlert(queueNumber) {
             showToast(`🔔 ถึงคิวของคุณแล้ว: หมายเลข ${queueNumber}`);
-            if ('serviceWorker' in navigator && Notification.permission === "granted") {
-                navigator.serviceWorker.ready.then(function(registration) {
-                    registration.showNotification("📢 ประกาศเรียกคิวใหม่!", {
-                        body: `คิวหมายเลข ${queueNumber} กรุณาเลื่อนรถเข้าจุดรับ-ส่งสินค้าค่ะ`,
-                        icon: 'icon-192.png',
-                        badge: 'icon-192.png',
-                        vibrate: [200, 100, 200, 100, 200],
-                        tag: 'queue-alert'
-                    });
-                });
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification("📢 ประกาศเรียกคิวใหม่!", { body: `คิวหมายเลข ${queueNumber} กรุณาเลื่อนรถเข้าจุดรับ-ส่งสินค้าค่ะ` });
             }
         }
 
         function triggerDoneAlert(queueNumber) {
             showToast(`✅ คิว ${queueNumber} สิ้นสุดการให้บริการแล้ว ขอบคุณค่ะ`);
-            if ('serviceWorker' in navigator && Notification.permission === "granted") {
-                navigator.serviceWorker.ready.then(function(registration) {
-                    registration.showNotification("✅ สิ้นสุดการให้บริการ", {
-                        body: `คิวหมายเลข ${queueNumber} ทำรายการเสร็จสิ้นเรียบร้อยแล้ว ขอบคุณค่ะ`,
-                        icon: 'icon-192.png',
-                        badge: 'icon-192.png',
-                        tag: 'queue-done'
-                    });
-                });
-            }
-        }
-
-        function triggerAdminAlert(actionType, queueNumber, driverName) {
-            let title = "";
-            let body = "";
-            
-            if (actionType === 'call') {
-                title = `📢 เรียกคิว ${queueNumber} แล้ว`;
-                body = `คนขับ: ${driverName}\nส่งสัญญาณแจ้งเตือนไปยังโทรศัพท์คนขับเรียบร้อย`;
-            } else if (actionType === 'done') {
-                title = `✅ เสร็จสิ้นคิว ${queueNumber}`;
-                body = `คนขับ: ${driverName}\nบันทึกปิดงานและย้ายออกจากช่องส่งสินค้าแล้ว`;
-            } else if (actionType === 'cancel') {
-                title = `❌ ยกเลิกคิว ${queueNumber}`;
-                body = `ลบข้อมูลคิวของ ${driverName} ออกจากระบบแล้ว`;
-            }
-
-            showToast(title);
-
             if ("Notification" in window && Notification.permission === "granted") {
-                new Notification(title, {
-                    body: body,
-                    tag: 'admin-action',
-                    requireInteraction: false
-                });
+                new Notification("✅ สิ้นสุดการให้บริการ", { body: `คิวหมายเลข ${queueNumber} ทำรายการเสร็จสิ้นเรียบร้อยแล้ว ขอบคุณค่ะ` });
             }
         }
 
@@ -438,9 +348,6 @@
                 const myQueue = cachedQueues.find(q => q.queue_number === myQueueNumber);
                 if (myQueue && myQueue.id) {
                     showToast("⏳ กำลังยกเลิกคิวของคุณ...");
-                    
-                    triggerAdminAlert('cancel', myQueueNumber, myQueue.fullname);
-
                     fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST',
                         mode: 'cors',
@@ -511,6 +418,7 @@
                     showToast(`✨ จองคิวสำเร็จ! หมายเลขของคุณคือ ${resData.queue_number}`);
                     document.getElementById('queue-form').reset();
                     
+                    // 🚀 เพิ่มคำสั่งเลื่อนขึ้นด้านบนสุดโดยอัตโนมัติ (Smooth Scroll)
                     window.scrollTo({
                         top: 0,
                         behavior: 'smooth'
