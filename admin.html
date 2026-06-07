@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบควบคุมคิว (Admin Panel)</title>
+    <style>
+        :root {
+            --primary-color: #d32f2f;
+            --primary-dark: #b71c1c;
+            --secondary-color: #ffffff;
+            --text-color: #333333;
+            --bg-color: #f4f6f9;
+            --border-color: #e0e0e0;
+            --success-color: #2e7d32;
+            --warning-color: #ef6c00;
+            --dark-color: #212529;
+            --info-color: #0277bd;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); padding-bottom: 3rem; }
+        
+        header { 
+            background-color: var(--dark-color); 
+            color: var(--secondary-color); 
+            padding: 1.2rem 1rem; 
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15); 
+        }
+        header h1 { font-size: 1.2rem; }
+        
+        #toast {
+            visibility: hidden; min-width: 280px; max-width: 90%; background-color: #333; color: #fff;
+            text-align: center; border-radius: 8px; padding: 16px; position: fixed;
+            z-index: 9999; left: 50%; bottom: 20px; transform: translateX(-50%); font-size: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        /* สไตล์พิเศษสำหรับแจ้งเตือนคิวใหม่ */
+        #toast.new-queue { background-color: #ef6c00; color: white; font-weight: bold; font-size: 18px; border: 2px solid #fff; }
+        
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 20px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 20px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+
+        .admin-container { max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem; }
+        .card { background: #fff; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
+        .card h2 { margin-bottom: 1rem; font-size: 1.4rem; color: var(--dark-color); border-left: 4px solid var(--primary-color); padding-left: 0.5rem; }
+
+        .auth-box { max-width: 400px; margin: 4rem auto; text-align: center; }
+        .form-group { margin-bottom: 1.2rem; text-align: left; }
+        .form-group label { display: block; margin-bottom: 0.4rem; font-weight: bold; }
+        .form-group input { width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; }
+
+        button { padding: 0.65rem 1rem; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: #fff; transition: background 0.2s; font-size: 0.95rem; }
+        .btn-primary { background-color: var(--primary-color); width: 100%; padding: 0.8rem; border-radius: 8px; font-size: 1.05rem; }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-logout { background-color: #6c757d; font-size: 0.85rem; }
+        .btn-clear { background-color: #c62828; margin-bottom: 1.5rem; }
+        .btn-clear:hover { background-color: #b71c1c; }
+
+        .admin-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; width: 100%; margin-top: 0.8rem; }
+        .btn-act { padding: 0.55rem; font-size: 0.85rem; border-radius: 6px; text-align: center; }
+        .btn-call { background-color: var(--success-color); }
+        .btn-done { background-color: var(--info-color); }
+        .btn-move { background-color: var(--warning-color); }
+        .btn-cancel { background-color: #9e9e9e; }
+
+        .queue-cards-container { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
+        .queue-item-card { background: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem; position: relative; border-top: 4px solid var(--warning-color); }
+        .queue-item-card.serving { border-top-color: var(--success-color); background-color: #f0fdf4; }
+        
+        .card-row-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #cbd5e1; padding-bottom: 0.5rem; margin-bottom: 0.5rem; }
+        .card-q-num { font-size: 1.5rem; font-weight: 900; color: var(--primary-color); }
+        .card-status-badge { padding: 0.2rem 0.5rem; font-size: 0.75rem; font-weight: bold; border-radius: 4px; color: white; }
+        .badge-waiting { background-color: var(--warning-color); }
+        .badge-serving { background-color: var(--success-color); }
+        
+        .card-details p { font-size: 0.9rem; color: #475569; margin-bottom: 0.2rem; }
+        .card-details b { color: #0f172a; }
+
+        .table-responsive { display: none; width: 100%; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; margin-top: 1rem; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+        th, td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-color); }
+        th { background-color: var(--dark-color); color: #fff; font-weight: 600; }
+        tr.tr-serving { background-color: #f0fdf4; }
+
+        @media (min-width: 850px) {
+            .queue-cards-container { display: none; }
+            .table-responsive { display: block; }
+            .admin-actions { display: flex; gap: 0.3rem; margin-top: 0; }
+            .btn-act { padding: 0.4rem 0.7 Market; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="admin-auth-panel" class="card auth-box">
+        <h2>🔒 ผู้ดูแลระบบ (Admin)</h2>
+        <p style="font-size:0.85rem; color:#666; margin-bottom: 1.5rem;">กรุณากรอกรหัสผ่านเพื่อเข้าถึงข้อมูลควบคุมหลังบ้าน</p>
+        <div class="form-group">
+            <label>รหัสผ่าน</label>
+            <input type="password" id="admin-pass" placeholder="กรอกรหัสผ่านผู้ดูแลระบบ">
+        </div>
+        <button class="btn-primary" onclick="loginAdmin()">🔓 เข้าสู่ระบบ</button>
+    </div>
+
+    <div id="admin-dashboard" style="display: none;">
+        <header>
+            <h1>Admin Panel GR KORAT1</h1>
+            <button class="btn-logout" onclick="logoutAdmin()">Log out</button>
+        </header>
+
+        <div class="admin-container">
+            <button class="btn-clear" onclick="clearAllQueues()">ล้างข้อมูลคิวทั้งหมด</button>
+            
+            <div class="card">
+                <h2>📋รายการคิวรถขนส่ง</h2>
+                
+                <div id="mobile-queue-cards" class="queue-cards-container">
+                    <p style="text-align:center; color:#888; padding:1rem;">กำลังโหลดข้อมูล...</p>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>คิว</th>
+                                <th>คนขับ / บริษัท</th>
+                                <th>เบอร์โทร</th>
+                                <th>ข้อมูลรถและสินค้า</th>
+                                <th>สถานะ</th>
+                                <th>การจัดการคิว</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pc-queue-tbody">
+                            <tr><td colspan="6" style="text-align:center; color:#888;">กำลังโหลดข้อมูล...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">แจ้งเตือน</div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwde4zTSON9YDQ4QIfVbWtt5bBAJpK5T-enRT4bC2wk7qTAOtSG6cIvzbbYfyKsSWkR/exec"; 
+        const ADMIN_PASSWORD = "grkorat007"; 
+
+        let previousQueuesCount = -1; // ใช้เก็บจำนวนคิวรอบก่อนหน้าเพื่อเปรียบเทียบ
+        let previousQueuesList = [];  // ใช้เก็บรายชื่อคิวรอบก่อนหน้า
+
+        // 🎵 สร้างเสียงแจ้งเตือนแบบอิเล็กทรอนิกส์ (Beep Alert) โดยไม่ต้องพึ่งพาไฟล์เสียงภายนอก
+        function playNotificationSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // เสียงที่ 1 (ปิ๊ง)
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(587.33, audioCtx.currentTime); // โน้ต D5
+                gain1.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                osc1.connect(gain1);
+                gain1.connect(audioCtx.destination);
+                osc1.start();
+                osc1.stop(audioCtx.currentTime + 0.15);
+
+                // เสียงที่ 2 (ป่อง) ถัดมาเล็กน้อย
+                setTimeout(() => {
+                    const osc2 = audioCtx.createOscillator();
+                    const gain2 = audioCtx.createGain();
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(880, audioCtx.currentTime); // โน้ต A5
+                    gain2.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc2.connect(gain2);
+                    gain2.connect(audioCtx.destination);
+                    osc2.start();
+                    osc2.stop(audioCtx.currentTime + 0.3);
+                }, 120);
+            } catch (e) {
+                console.error("Audio error:", e);
+            }
+        }
+
+        function showToast(message, isNewQueue = false) {
+            const x = document.getElementById("toast");
+            x.innerText = message;
+            
+            if (isNewQueue) {
+                x.className = "show new-queue";
+            } else {
+                x.className = "show";
+            }
+            
+            setTimeout(function(){ 
+                x.className = x.className.replace("show", "").replace("new-queue", ""); 
+            }, 4000);
+        }
+
+        function fetchData() {
+            if (sessionStorage.getItem('isAdmin') !== 'true') return;
+
+            fetch(GOOGLE_SCRIPT_URL)
+            .then(res => res.json())
+            .then(data => {
+                // คัดกรองเฉพาะคิวที่ยังไม่เสร็จสิ้นหรือยกเลิก
+                const activeQueues = data.queues.filter(q => q.status !== 'done' && q.status !== 'cancel' && q["สถานะคิว"] !== 'done' && q["สถานะคิว"] !== 'cancel');
+                
+                // 🔔 ระบบตรวจสอบผู้ลงทะเบียนรายใหม่
+                if (previousQueuesCount !== -1) {
+                    // วิธีเช็ก: ดูว่ามีคิวไหนในรอบนี้ ที่รอบก่อนหน้านี้ไม่มีอยู่
+                    const newRegistrations = activeQueues.filter(currentQ => {
+                        const currentNum = currentQ.queue_number || currentQ["คิว"];
+                        return !previousQueuesList.some(prevQ => (prevQ.queue_number || prevQ["คิว"]) === currentNum);
+                    });
+
+                    if (newRegistrations.length > 0) {
+                        // ดึงข้อมูลคิวล่าสุดที่เข้ามา
+                        const latestQ = newRegistrations[newRegistrations.length - 1];
+                        const qNum = latestQ.queue_number || latestQ["คิว"] || "ใหม่";
+                        const qName = latestQ.fullname || latestQ["ชื่อ-นามสกุล"] || "ผู้ใช้บริการ";
+                        
+                        // ส่งสัญญาณแจ้งเตือนแอดมิน
+                        playNotificationSound();
+                        showToast(`🔔 มีผู้จองคิวใหม่เข้ามา! หมายเลข: ${qNum} (${qName})`, true);
+                    }
+                }
+
+                // บันทึกสถานะปัจจุบันไว้เปรียบเทียบในรอบถัดไป
+                previousQueuesCount = activeQueues.length;
+                previousQueuesList = activeQueues;
+
+                renderAdminUI(activeQueues);
+            })
+            .catch(err => console.error("Error connecting server:", err));
+        }
+
+        function renderAdminUI(queues) {
+            const mobileContainer = document.getElementById('mobile-queue-cards');
+            const pcTbody = document.getElementById('pc-queue-tbody');
+
+            if (queues.length === 0) {
+                const emptyHTML = `<div style="text-align:center; color:#888; padding:2rem 0; width:100%;">ไม่มีรายการคิวคงค้างในขณะนี้</div>`;
+                mobileContainer.innerHTML = emptyHTML;
+                pcTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888; padding:1.5rem;">ไม่มีรายการคิวคงค้างในขณะนี้</td></tr>`;
+                return;
+            }
+
+            mobileContainer.innerHTML = "";
+            pcTbody.innerHTML = "";
+
+            queues.forEach(q => {
+                const queueNumber = q.queue_number || q["คิว"] || "ไม่ระบุ";
+                const fullname    = q.fullname || q["ชื่อ-นามสกุล"] || "ไม่ระบุ";
+                const phone       = q.phone || q["เบอร์โทรศัพท์"] || "ไม่ระบุ";
+                const company     = q.company || q["บริษัท"] || "ไม่ระบุ";
+                const carType     = q.car_type || q["ประเภทรถ"] || "ไม่ระบุ";
+                const licenseId   = q.license_id || q["ทะเบียน"] || "ไม่ระบุ";
+                const product     = q.product || q["สินค้า"] || "ไม่ระบุ";
+                const quantity    = q.quantity || q["จำนวนสินค้า"] || "";
+                const currentStatus = q.status || q["สถานะคิว"] || "waiting";
+
+                const isServing = currentStatus === 'serving';
+                const statusLabel = isServing ? 'กำลังบริการ' : 'รอเรียกคิว';
+                const badgeClass = isServing ? 'badge-serving' : 'badge-waiting';
+
+                const actionsHTML = `
+                    <button class="btn-act btn-call" onclick="controlQueue('${q.id}', 'call')">เรียกคิว</button>
+                    <button class="btn-act btn-done" onclick="controlQueue('${q.id}', 'done')">เสร็จสิ้น</button>
+                    <button class="btn-act btn-move" onclick="controlQueue('${q.id}', 'move-end')">ย้ายท้าย</button>
+                    <button class="btn-act btn-cancel" onclick="controlQueue('${q.id}', 'cancel')">ยกเลิก</button>
+                `;
+
+                // --- เวอร์ชันมือถือ ---
+                const card = document.createElement('div');
+                card.className = `queue-item-card ${isServing ? 'serving' : ''}`;
+                card.innerHTML = `
+                    <div class="card-row-header">
+                        <span class="card-q-num">${queueNumber}</span>
+                        <span class="card-status-badge ${badgeClass}">${statusLabel}</span>
+                    </div>
+                    <div class="card-details">
+                        <p><b>คนขับ:</b> ${fullname} | <b>โทร:</b> ${phone}</p>
+                        <p><b>บริษัท:</b> ${company}</p>
+                        <p><b>รถ:</b> ${carType} (ทะเบียน: <span style="color:blue; font-weight:bold;">${licenseId}</span>)</p>
+                        <p><b>สินค้า:</b> ${product} ${quantity ? '(' + quantity + ')' : ''}</p>
+                    </div>
+                    <div class="admin-actions">${actionsHTML}</div>
+                `;
+                mobileContainer.appendChild(card);
+
+                // --- เวอร์ชันจอคอมพิวเตอร์ ---
+                const tr = document.createElement('tr');
+                if (isServing) tr.className = "tr-serving";
+                tr.innerHTML = `
+                    <td style="font-size:1.2rem; font-weight:bold; color:var(--primary-color);">${queueNumber}</td>
+                    <td><b>${fullname}</b><br><span style="font-size:0.8rem; color:#666;">${company}</span></td>
+                    <td>${phone}</td>
+                    <td>${carType} / <span style="color:blue; font-weight:bold;">${licenseId}</span><br><span style="font-size:0.75rem; color:#666;">สินค้า: ${product} ${quantity ? '(' + quantity + ')' : ''}</span></td>
+                    <td><span class="card-status-badge ${badgeClass}">${statusLabel}</span></td>
+                    <td><div class="admin-actions">${actionsHTML}</div></td>
+                `;
+                pcTbody.appendChild(tr);
+            });
+        }
+
+        function controlQueue(id, action) {
+            let msg = "คุณต้องการดำเนินการกับคิวนี้ใช่หรือไม่?";
+            if (action === 'call') msg = "ต้องการเรียกคิวนี้เข้าจุดบริการใช่หรือไม่?";
+            if (action === 'done') msg = "ยืนยันการเสร็จสิ้นบริการคิวนี้ใช่หรือไม่?";
+            if (action === 'move-end') msg = "ต้องการย้ายคิวนี้ไปต่อท้ายแถวสุดใช่หรือไม่?";
+            if (action === 'cancel') msg = "❗ ยืนยันการลบคิวนี้ออกจากระบบใช่หรือไม่?";
+
+            if (confirm(msg)) {
+                showToast("⏳ กำลังส่งคำสั่งควบคุม...");
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, action: action })
+                }).then(() => {
+                    showToast("✅ ดำเนินการสำเร็จ");
+                    setTimeout(fetchData, 1000);
+                });
+            }
+        }
+
+        function clearAllQueues() {
+            if (confirm("🚨 เตือนขั้นวิกฤต!\nคุณแน่ใจใช่ไหมที่จะลบข้อมูลคิวรถทุกคิวออกจากระบบอย่างถาวร?")) {
+                showToast("🧹 กำลังเคลียร์ฐานข้อมูล...");
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'clear-all' })
+                }).then(() => {
+                    showToast("🧹 ล้างคิวทั้งหมดสำเร็จ!");
+                    // รีเซ็ตตัวแปรเช็กคิวใหม่
+                    previousQueuesCount = 0;
+                    previousQueuesList = [];
+                    setTimeout(() => { fetchData(); }, 1000);
+                });
+            }
+        }
+
+        function loginAdmin() {
+            if (document.getElementById('admin-pass').value === ADMIN_PASSWORD) {
+                sessionStorage.setItem('isAdmin', 'true');
+                document.getElementById('admin-auth-panel').style.display = 'none';
+                document.getElementById('admin-dashboard').style.display = 'block';
+                showToast("🔓 เข้าสู่ระบบแอดมินแล้ว");
+                fetchData();
+            } else {
+                showToast("❌ รหัสผ่านไม่ถูกต้อง");
+            }
+        }
+
+        function logoutAdmin() {
+            sessionStorage.removeItem('isAdmin');
+            document.getElementById('admin-auth-panel').style.display = 'block';
+            document.getElementById('admin-dashboard').style.display = 'none';
+        }
+
+        if (sessionStorage.getItem('isAdmin') === 'true') {
+            document.getElementById('admin-auth-panel').style.display = 'none';
+            document.getElementById('admin-dashboard').style.display = 'block';
+            fetchData();
+        }
+
+        // ตั้งเวลาอัปเดตข้อมูลอัตโนมัติทุกๆ 6 วินาทีเพื่อเช็กคิวใหม่
+        setInterval(fetchData, 6000);
+    </script>
+</body>
+</html>
