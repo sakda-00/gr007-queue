@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบบัตรคิวส่งสินค้า GR KORAT</title>
+    
+    <link rel="manifest" href="./manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="GR KORAT">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
     <style>
         :root {
             --primary-color: #d32f2f;
@@ -255,23 +262,76 @@
             setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
         }
 
+        // 🛠️ ปรับปรุง: ลงทะเบียน Service Worker และขอสิทธิ์รับ Notification
         function checkNotificationPermission() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js')
+                .then(function(reg) {
+                    console.log('PWA Service Worker Registered!', reg);
+                }).catch(function(err) {
+                    console.error('Service Worker Failed', err);
+                });
+            }
+
             if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
                 Notification.requestPermission();
             }
         }
 
+        // 🛠️ ปรับปรุง: แจ้งเตือนฝั่งคนขับ (ผ่าน Service Worker เพื่อความเสถียรตอนปิดจอ)
         function triggerQueueAlert(queueNumber) {
             showToast(`🔔 ถึงคิวของคุณแล้ว: หมายเลข ${queueNumber}`);
-            if ("Notification" in window && Notification.permission === "granted") {
-                new Notification("📢 ประกาศเรียกคิวใหม่!", { body: `คิวหมายเลข ${queueNumber} กรุณาเลื่อนรถเข้าจุดรับ-ส่งสินค้าค่ะ` });
+            if ('serviceWorker' in navigator && Notification.permission === "granted") {
+                navigator.serviceWorker.ready.then(function(registration) {
+                    registration.showNotification("📢 ประกาศเรียกคิวใหม่!", {
+                        body: `คิวหมายเลข ${queueNumber} กรุณาเลื่อนรถเข้าจุดรับ-ส่งสินค้าค่ะ`,
+                        icon: 'icon-192.png',
+                        badge: 'icon-192.png',
+                        vibrate: [200, 100, 200, 100, 200],
+                        tag: 'queue-alert'
+                    });
+                });
             }
         }
 
         function triggerDoneAlert(queueNumber) {
             showToast(`✅ คิว ${queueNumber} สิ้นสุดการให้บริการแล้ว ขอบคุณค่ะ`);
+            if ('serviceWorker' in navigator && Notification.permission === "granted") {
+                navigator.serviceWorker.ready.then(function(registration) {
+                    registration.showNotification("✅ สิ้นสุดการให้บริการ", {
+                        body: `คิวหมายเลข ${queueNumber} ทำรายการเสร็จสิ้นเรียบร้อยแล้ว ขอบคุณค่ะ`,
+                        icon: 'icon-192.png',
+                        badge: 'icon-192.png',
+                        tag: 'queue-done'
+                    });
+                });
+            }
+        }
+
+        // 🚀 เพิ่มเติม: ระบบแจ้งเตือนสำหรับแอดมินเมื่อกดสั่งงานสำเร็จ (สามารถนำฟังก์ชันนี้ไปเรียกใช้ในหน้าแอดมินหลักได้เช่นกัน)
+        function triggerAdminAlert(actionType, queueNumber, driverName) {
+            let title = "";
+            let body = "";
+            
+            if (actionType === 'call') {
+                title = `📢 เรียกคิว ${queueNumber} แล้ว`;
+                body = `คนขับ: ${driverName}\nส่งสัญญาณแจ้งเตือนไปยังโทรศัพท์คนขับเรียบร้อย`;
+            } else if (actionType === 'done') {
+                title = `✅ เสร็จสิ้นคิว ${queueNumber}`;
+                body = `คนขับ: ${driverName}\nบันทึกปิดงานและย้ายออกจากช่องส่งสินค้าแล้ว`;
+            } else if (actionType === 'cancel') {
+                title = `❌ ยกเลิกคิว ${queueNumber}`;
+                body = `ลบข้อมูลคิวของ ${driverName} ออกจากระบบแล้ว`;
+            }
+
+            showToast(title);
+
             if ("Notification" in window && Notification.permission === "granted") {
-                new Notification("✅ สิ้นสุดการให้บริการ", { body: `คิวหมายเลข ${queueNumber} ทำรายการเสร็จสิ้นเรียบร้อยแล้ว ขอบคุณค่ะ` });
+                new Notification(title, {
+                    body: body,
+                    tag: 'admin-action',
+                    requireInteraction: false
+                });
             }
         }
 
@@ -348,6 +408,10 @@
                 const myQueue = cachedQueues.find(q => q.queue_number === myQueueNumber);
                 if (myQueue && myQueue.id) {
                     showToast("⏳ กำลังยกเลิกคิวของคุณ...");
+                    
+                    // เรียกใช้แจ้งเตือนสำหรับเคสแอดมินหรือคนขับสั่งแคนเซิลเอง
+                    triggerAdminAlert('cancel', myQueueNumber, myQueue.fullname);
+
                     fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST',
                         mode: 'cors',
@@ -418,7 +482,6 @@
                     showToast(`✨ จองคิวสำเร็จ! หมายเลขของคุณคือ ${resData.queue_number}`);
                     document.getElementById('queue-form').reset();
                     
-                    // 🚀 เพิ่มคำสั่งเลื่อนขึ้นด้านบนสุดโดยอัตโนมัติ (Smooth Scroll)
                     window.scrollTo({
                         top: 0,
                         behavior: 'smooth'
