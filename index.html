@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบบัตรคิวส่งสินค้า GR KORAT</title>
     
+    <!-- 🚀 ส่วนที่เพิ่มสำหรับ PWA (Progressive Web App) -->
     <link rel="manifest" href="./manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -25,7 +26,7 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; padding-bottom: 2rem; }
+        body { background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; padding-bottom: 2rem; position: relative; }
         
         header { 
             background-color: var(--primary-color); 
@@ -33,10 +34,38 @@
             padding: 1.5rem 1rem; 
             text-align: center; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            position: relative;
         }
-        header h1 { font-size: 1.5rem; margin-bottom: 0.2rem; }
+        header h1 { font-size: 1.5rem; margin-bottom: 0.2rem; padding-right: 2rem; }
         header p { font-size: 0.9rem; opacity: 0.9; }
         
+        /* ⚙️ ปุ่มเชื่อมต่อไปหน้าแอดมิน (Floating Admin Button) */
+        .admin-float-btn {
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.3rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .admin-float-btn:hover {
+            background-color: var(--secondary-color);
+            color: var(--primary-color);
+            transform: translateY(-50%) scale(1.08);
+        }
+
         #toast {
             visibility: hidden; min-width: 280px; max-width: 90%; background-color: #333; color: #fff;
             text-align: center; border-radius: 8px; padding: 16px; position: fixed;
@@ -109,8 +138,9 @@
 
         @media (min-width: 768px) {
             header { padding: 2rem 1rem; }
-            header h1 { font-size: 2.2rem; }
+            header h1 { font-size: 2.2rem; padding-right: 0; }
             header p { font-size: 1.1rem; }
+            .admin-float-btn { right: 30px; width: 48px; height: 48px; font-size: 1.5rem; }
             .container { grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem auto; padding: 0 1.5rem; }
             .card { padding: 1.8rem; }
             .card h2 { font-size: 1.5rem; }
@@ -157,6 +187,9 @@
     <header>
         <h1>ระบบบัตรคิวรถขนส่งสินค้า GR.ST007</h1>
         <p>Makro Nakhon Ratchasima 1</p>
+        
+        <!-- ⚙️ ปุ่มทางเข้าหน้าแอดมิน (เปลี่ยนชื่อไฟล์ admin.html ให้ตรงกับชื่อไฟล์จริงของคุณนะครับ) -->
+        <a href="./admin.html" class="admin-float-btn" title="เข้าสู่ระบบแอดมิน">⚙️</a>
     </header>
 
     <div id="toast">แจ้งเตือน</div>
@@ -262,7 +295,6 @@
             setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
         }
 
-        // 🛠️ ปรับปรุง: ลงทะเบียน Service Worker และขอสิทธิ์รับ Notification
         function checkNotificationPermission() {
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('./sw.js')
@@ -278,7 +310,6 @@
             }
         }
 
-        // 🛠️ ปรับปรุง: แจ้งเตือนฝั่งคนขับ (ผ่าน Service Worker เพื่อความเสถียรตอนปิดจอ)
         function triggerQueueAlert(queueNumber) {
             showToast(`🔔 ถึงคิวของคุณแล้ว: หมายเลข ${queueNumber}`);
             if ('serviceWorker' in navigator && Notification.permission === "granted") {
@@ -308,7 +339,6 @@
             }
         }
 
-        // 🚀 เพิ่มเติม: ระบบแจ้งเตือนสำหรับแอดมินเมื่อกดสั่งงานสำเร็จ (สามารถนำฟังก์ชันนี้ไปเรียกใช้ในหน้าแอดมินหลักได้เช่นกัน)
         function triggerAdminAlert(actionType, queueNumber, driverName) {
             let title = "";
             let body = "";
@@ -409,7 +439,6 @@
                 if (myQueue && myQueue.id) {
                     showToast("⏳ กำลังยกเลิกคิวของคุณ...");
                     
-                    // เรียกใช้แจ้งเตือนสำหรับเคสแอดมินหรือคนขับสั่งแคนเซิลเอง
                     triggerAdminAlert('cancel', myQueueNumber, myQueue.fullname);
 
                     fetch(GOOGLE_SCRIPT_URL, {
